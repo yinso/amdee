@@ -63,11 +63,11 @@ class ParsedScript extends EventEmitter
         item
     """
 // #{@filePath}
-var #{scriptName(@filePath)} = (function(exports) {
-  var module = { exports: exports };
+var #{scriptName(@filePath)} = (function() {
+  var module = { exports: {} };
   #{output.join('')}
-  return exports;
-})({})
+  return module.exports;
+})()
 """
 
 # object to hold all of the parsed script in ordered dependencies
