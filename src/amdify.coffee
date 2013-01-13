@@ -9,11 +9,9 @@
 
 fs = require 'fs'
 path = require 'path'
-resolve = require 'resolve'
-mkdirp = require 'mkdirp'
 _ = require 'underscore'
 argv = require('optimist')
-  #.demand(['source','target'])
+  .demand(['source','target'])
   .usage('Usage: amdify -source <source_module_dir> -target <target_output_dir>')
   .argv
 
@@ -60,17 +58,16 @@ argv = require('optimist')
 # i.e. each spec should causes an event to occur.
 # we can build on top of EventEmitter.
 
-Parser = require('./parser')
+{parseFile} = require './parser'
 
-parser = new Parser()
-
-if not argv._.length
-  console.log "missing arguments."
-else
-  parser.parseFile argv._[0], (err, parsed) ->
-    if err
-      console.log 'ERROR\n', err
-    else
-      console.log parsed
+parseFile argv.source, (err, parsed) ->
+  if err
+    console.log 'ERROR\n', err
+  else
+    fs.writeFile argv.target, parsed.serialize(), (err) ->
+      if err
+        console.log 'ERROR\n', err
+      else
+        console.log 'done.'
 
 

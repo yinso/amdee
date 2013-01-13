@@ -8,7 +8,7 @@ argv = require('optimist')
   .demand(['source','target'])
   .usage('Usage: amdify -source <source_module_dir> -target <target_output_dir>')
   .argv
-noComment = require '../parser/nocomment'
+noComment = require './lib/nocomment'
 
 requireRegex = new RegExp "require\\s*\\(\\s*[\"\']([^\\)]+)[\"\']\\s*\\)", "g"
 
