@@ -1,0 +1,4 @@
+#!/usr/bin/env node # -*- javascript -*- -p
+
+require('coffee-script');
+require('../src/amdify');

@@ -1,0 +1,7 @@
+.monitor
+.DS_Store*
+*~
+/node_modules
+[Tt]humbs.db
+/public/videos
+
