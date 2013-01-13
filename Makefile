@@ -7,7 +7,13 @@ COFFEE_OBJECTS=$(patsubst $(VPATH)/%.coffee, $(BUILDDIR)/%.js, $(COFFEE_SOURCES)
 all: build
 
 .PHONY: build
-build: node_modules objects 
+build: node_modules objects lib/nocomment.js
+
+lib/nocomment.js: grammar/nocomment.pegjs
+	pegjs grammar/nocomment.pegjs lib/nocomment.js
+
+.PHONY: grammar
+grammar: lib/nocomment.js
 
 .PHONY: objects
 objects: $(COFFEE_OBJECTS)
@@ -15,7 +21,6 @@ objects: $(COFFEE_OBJECTS)
 .PHONY: test
 test: build
 	./node_modules/.bin/mocha --compilers coffee:coffee-script --reporter spec
-
 
 .PHONY: clean
 clean:

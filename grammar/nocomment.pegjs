@@ -29,13 +29,14 @@ comment
   / multiline_comment
 
 singleline_comment
-  = "//" chars:singleline_comment_char* { return {comment: chars.join('') } }
+  = "//" chars:singleline_comment_char* { return {comment: "//" + chars.join('') } }
+  / "#" chars:singleline_comment_char* { return {comment: "#" + chars.join('') } }
 
 singleline_comment_char
   = [^\r\n\u2028\u2029]
 
 multiline_comment
-  = "/*" chars:multiline_comment_char* "*/" { return { comment: chars.join('') } }
+  = "/*" chars:multiline_comment_char* "*/" { return { comment: "/*" + chars.join('') + "*/" } }
 
 multiline_comment_char
   = "*" !"/" 
@@ -59,8 +60,12 @@ doublequote_char
 doublequote_string
   = parts:('"' doublequote_char* '"') { return '"' + parts[1].join('') + '"' }
 
+rspec_string
+  = "'" chars:singlequote_char* "'" { return chars.join(''); }
+  / '"' chars:doublequote_char* '"' { return chars.join(''); }
+
 require_exp
-  = "require" whitespace* "("? whitespace* spec:string whitespace* ")"?  { return { require: spec } }
+  = "require" whitespace* "("? whitespace* spec:rspec_string whitespace* ")"?  { return { require: spec } }
 
 whitespace
   = [ \r\n\t]
