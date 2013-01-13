@@ -12,7 +12,7 @@ path = require 'path'
 _ = require 'underscore'
 argv = require('optimist')
   .demand(['source','target'])
-  .usage('Usage: amdify -source <source_module_dir> -target <target_output_dir>')
+  .usage('Usage: amdify [-w] -source <source_module_dir> -target <target_output_dir>')
   .argv
 
 ###
@@ -60,6 +60,7 @@ argv = require('optimist')
 
 {parseFile} = require './parser'
 
+# we also want to have the ability to watch for the files to change...
 parseFile argv.source, (err, parsed) ->
   if err
     console.log 'ERROR\n', err

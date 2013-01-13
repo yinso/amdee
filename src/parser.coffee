@@ -111,11 +111,12 @@ class ModuleParser
       @externals[depend.fullPath] = depend
   serialize: () ->
     scripts = (script.serialize() for script in @orderedScripts).join('\n\n')
-    externals = ("'#{key}'" for key, val of @externals)
+    depends = ['require','exports','module'].concat (key for key, val of @externals)
+    externals = ("'#{val}'" for val in depends)
     # return the last script name...
     exportName = scriptName(@orderedScripts[@orderedScripts.length - 1].filePath)
     """
-define(['require', 'exports', 'module', #{externals}], function(require, exports, module) {
+define([#{externals}], function(require, exports, module) {
   #{scripts}
   return #{exportName};
 });
