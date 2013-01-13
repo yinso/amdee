@@ -62,7 +62,6 @@ argv = require('optimist')
 {parseFile} = require './parser'
 {EventEmitter} = require 'events'
 
-
 # we also want to have the ability to watch for the files to change...
 # because we have a list of the files that should be watched once we've done the parsing
 
@@ -76,7 +75,7 @@ class Watcher extends EventEmitter
     @removeOldWatchers fileMap
     for file, val of fileMap
       if not @inner[file]
-        @inner[file] = fs.watch file, (evt, fileName) =>
+        @inner[file] = fs.watch file, (evt) =>
           console.log "[#{evt}] #{file}"
           @emit 'changed', event: evt, file: file
           if cb

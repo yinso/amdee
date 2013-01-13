@@ -6,7 +6,6 @@ noComment = require '../lib/nocomment'
 coffee = require 'coffee-script'
 
 scriptName = (filePath) ->
-  console.log "// scriptName: ", filePath
   path.join(path.dirname(filePath), path.basename(filePath, path.extname(filePath))).replace(/[\\\/]+/g, '_')
 
 # object to represent the dependency of scripts (i.e. require-spec)
@@ -64,7 +63,7 @@ class ParsedScript extends EventEmitter
     """
 // #{@filePath}
 var #{scriptName(@filePath)} = (function() {
-  var module = { exports: {} };
+  var module = { exports: {} }; // do not use exports only
   #{output.join('')}
   return module.exports;
 })()
