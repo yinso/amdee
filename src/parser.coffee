@@ -1,9 +1,9 @@
 {EventEmitter} = require 'events'
 fs = require 'fs'
 path = require 'path'
-resolve = require 'resolve'
 noComment = require '../lib/nocomment'
 coffee = require 'coffee-script'
+resolve = require './resolve'
 
 scriptName = (filePath) ->
   path.join(path.dirname(filePath), path.basename(filePath, path.extname(filePath))).replace(/[\\\/]+/g, '_')
@@ -12,11 +12,27 @@ scriptName = (filePath) ->
 class ScriptDependency
   constructor: (rspec, filePath) ->
     @rspec = rspec
+    @basePath = path.dirname filePath
     @relative = @isRelative(rspec) or false # if it's not relative then it's external.
-    @fullPath = if @relative then @resolvePath(filePath) else @rspec
+    console.log 'ScriptDependency: ', @relative
+#    @fullPath = if @relative then @resolvePath(filePath) else @rspec
     @core = resolve.isCore(rspec) or false
+  resolve: (cb) ->
+    console.log 'resolve: ', @rspec
+    if not @relative
+      @fullPath = @rspec
+      cb true, @relative, @fullPath
+    else
+      resolve.resolve @rspec, {dir: @basePath, extensions: ['.coffee', '.js']}, (exists, fullPath) =>
+        if exists 
+          @fullPath = fullPath
+          console.log 'resolve: ', @rspec, '=>', @fullPath
+          cb true, @relative, @fullPath
+        else
+          cb false, @relative, @fullPath
+          
   isRelative: (rspec) ->
-    rspec.match /^\.\.?\// or false
+    (rspec.match(/^\.\.?\//) != null) or false
   resolvePath: (filePath) ->
     resolve.sync @rspec, basedir: path.dirname(filePath), extensions: ['.js', '.coffee']
   isExternal: () ->
@@ -90,7 +106,15 @@ class ModuleParser
   parseDependencies: (cb) ->
     if @depends.length > 0
       depend = @depends.pop()
-      @parse depend.fullPath, cb
+      # we can resolve the dependency here?
+      depend.resolve (exists, isRelative) =>
+        if exists
+          if not isRelative and not @externals[depend.fullPath]
+            @externals[depend.fullPath] = depend
+          else
+            @parse depend.fullPath, cb
+        else # the dependency simply does not exist -> should signal error.
+          cb {error: 'non_existant_dependency', dependency: depend}
     else
       cb null, @
   addScript: (filePath, data) ->
@@ -104,10 +128,11 @@ class ModuleParser
     script.formatParsed parsed
     script
   addDependency: (depend) ->
-    if depend.relative and not @scripts[depend.fullPath]
-      @depends.push depend
-    else if not @externals[depend.fullPath]
-      @externals[depend.fullPath] = depend
+    @depends.push depend
+    #if depend.relative and not @scripts[depend.fullPath]
+    #  @depends.push depend
+    #else if not @externals[depend.fullPath]
+    #  @externals[depend.fullPath] = depend
   serialize: () ->
     scripts = (script.serialize() for script in @orderedScripts).join('\n\n')
     depends = ['require','exports','module'].concat (key for key, val of @externals)
