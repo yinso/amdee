@@ -11,7 +11,7 @@ fs = require 'fs'
 path = require 'path'
 _ = require 'underscore'
 argv = require('optimist')
-  .demand(['source','target'])
+  .demand(['source'])
   .boolean('w')
   .usage('Usage: amdify [-w] -source <source_module_dir> -target <target_output_dir>')
   .argv
@@ -88,12 +88,13 @@ class Watcher extends EventEmitter
 
 watcher = new Watcher()
 
-entry = (source, target, watch) ->
-
+entry = ({source, target, obj, nothing, watch}) ->
+  # remove the .extension? we'll figure this one out later...
   parseFile source, (err, parsed) ->
     if err
-      console.log 'ERROR\n', err
-    else
+      console.log 'ERROR'
+      console.log err
+    else if target
       fs.writeFile target, parsed.serialize(), (err) ->
         if err
           console.log 'ERROR\n', err
@@ -102,5 +103,7 @@ entry = (source, target, watch) ->
         if watch
           watcher.addFileMap parsed.scripts, ({event, file}) ->
             entry source, target, watch
+    else if not nothing
+      console.log if obj then parsed else parsed.serialize()
 
-entry argv.source, argv.target, argv.w
+entry argv
