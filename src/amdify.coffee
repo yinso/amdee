@@ -10,9 +10,10 @@
 fs = require 'fs'
 path = require 'path'
 _ = require 'underscore'
+async = require './async'
 argv = require('optimist')
   .demand(['source'])
-  .boolean('w')
+  #.boolean('w')
   .usage('Usage: amdify [-w] -source <source_module_dir> -target <target_output_dir>')
   .argv
 
@@ -69,27 +70,28 @@ argv = require('optimist')
 class Watcher extends EventEmitter
   constructor: () ->
     @inner = {}
-  addFileMap: (fileMap, cb) ->
+  addFileMap: (scripts, onChange) ->
     # the goal is to determine whether something exists...
     # we also want to anything that
-    @removeOldWatchers fileMap
-    for file, val of fileMap
-      if not @inner[file]
-        @inner[file] = fs.watch file, (evt) =>
-          console.log "[#{evt}] #{file}"
-          @emit 'changed', event: evt, file: file
-          if cb
-            cb event: evt, file: file
-  removeOldWatchers: (fileMap) ->
+    @removeOldWatchers scripts
+    helper = (script) =>
+      console.log "[watch:add] #{script.name} => #{script.fullPath}"
+      @inner[script.name] = fs.watch script.fullPath, (evt, fileName) =>
+        console.log "[watch:#{evt}] #{script.name} => #{script.fullPath}"
+        onChange {event: evt, file: script, fullPath: script.fullPath}
+    for script in scripts
+      helper script
+    #async.forEach scripts, helper, cb
+  removeOldWatchers: (scripts) ->
     for file, watcher of @inner
-      if not fileMap[file]
-        watcher.close()
-        delete @inner[file]
+      watcher.close()
+      delete @inner[file]
 
 watcher = new Watcher()
 
-entry = ({source, target, obj, nothing, watch}) ->
+entry = (opts) ->
   # remove the .extension? we'll figure this one out later...
+  {source, target, obj, nothing, watch} = opts
   parseFile source, (err, parsed) ->
     if err
       console.log 'ERROR'
@@ -101,8 +103,8 @@ entry = ({source, target, obj, nothing, watch}) ->
         else
           console.log "Saved to #{target}"
         if watch
-          watcher.addFileMap parsed.scripts, ({event, file}) ->
-            entry source, target, watch
+          watcher.addFileMap parsed.ordered, ({event, file, fullPath}) ->
+            entry opts
     else if not nothing
       console.log if obj then parsed else parsed.serialize()
 
