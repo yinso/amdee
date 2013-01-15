@@ -58,7 +58,7 @@ class ParsedScript extends ScriptSpec
       else
         @parse moduleMap, cb
   parse: (moduleMap, cb) ->
-    console.log {parse: @fullPath}
+    #console.log {parse: @fullPath}
     filePath = path.resolve @fullPath
     fs.readFile filePath, (err, data) =>
       if err
@@ -70,7 +70,7 @@ class ParsedScript extends ScriptSpec
         catch e
           cb e
   parseDependencies: (moduleMap, cb) -> # this tree structure all of the sudden does not work... hmm...
-    console.log {parseDependencies: @fullPath, depends: @depends}
+    #console.log {parseDependencies: @fullPath, depends: @depends}
     resolveDepend = (depend, next) =>
       if moduleMap.hasScriptByScript depend
         next null, depend
