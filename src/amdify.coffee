@@ -63,8 +63,8 @@ watcher = new Watcher()
 
 entry = (opts) ->
   # remove the .extension? we'll figure this one out later...
-  {source, target, obj, nothing, watch} = opts
-  parseFile source, (err, parsed) ->
+  {source, target, obj, nothing, watch, requirejs} = opts
+  parseFile source, {requirejs: requirejs}, (err, parsed) ->
     if err
       console.log 'ERROR'
       console.log err

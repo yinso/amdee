@@ -141,11 +141,13 @@ var #{scriptName(@name)} = (function() {
 # now we have a normalized name that's based on process.cwd()
 # so when adding file we'll have to 
 class ScriptMap
-  constructor: (rootPath = process.cwd()) ->
+  constructor: (options = {}) ->
+    {rootPath, requirejs} = options
     @scripts = {}
     @ordered = []
     @externals = {}
-    @rootPath = rootPath
+    @rootPath = rootPath or process.cwd()
+    @requirejs = requirejs
   resolveRSpec: (rspec, filePath) ->
     path.relative @rootPath, path.resolve(path.dirname(filePath), rspec)
   isRelative: (rspec) ->
@@ -178,13 +180,22 @@ class ScriptMap
       else
         @addScript @script
         cb null, result
+  serializeRequireJS: () ->
+    if @requirejs
+      """
+require.config(#{JSON.stringify(@requirejs)});
+"""
+    else
+      ''
   serialize: () ->
     scripts = (script.serialize() for script in @ordered).join('')
     depends = ['require','exports','module'].concat (key for key, val of @externals)
     externals = ("'#{val}'" for val in depends)
     # return the last script name...
     exportName = scriptName @script.name
+    requireJS = @serializeRequireJS()
     """
+#{requireJS}
 define([#{externals}], function(require,exports,module) {
 
 #{scripts}
@@ -210,7 +221,7 @@ normalizePath = (filePath) ->
     filePath
 
 module.exports =
-  parseFile: (filePath, cb) ->
-    parser = new ScriptMap()
+  parseFile: (filePath, options, cb) ->
+    parser = new ScriptMap(options)
     parser.parse normalizePath(filePath), (err, lastScript) ->
       cb null, parser

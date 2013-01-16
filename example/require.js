@@ -1,4 +1,4 @@
-
+require.config({"paths":{"jquery":"https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min","jquery.livequery":"https://raw.github.com/brandonaaron/livequery/master/jquery.livequery","jquery.address":"https://raw.github.com/bzlib/jquery-address/master/src/jquery.address","jquery.form":"http://malsup.github.com/jquery.form","jquery.autosize":"http://www.jacklmoore.com/autosize/jquery.autosize","template":"/views/template","underscore":"http://underscorejs.org/underscore","handlebars":"http://cloud.github.com/downloads/wycats/handlebars.js/handlebars.runtime-1.0.rc.1"},"shim":{"jquery":{"deps":[],"exports":"jQuery"},"jquery.livequery":["jquery"],"jquery.address":["jquery"],"jquery.form":["jquery"],"jquery.autosize":["jquery"],"template":["handlebars"],"underscore":{"deps":[],"exports":"_"},"handlebars":{"deps":[],"exports":"Handlebars"}}});
 define(['require','exports','module','underscore','assert','async','resolve'], function(require,exports,module) {
 
 
