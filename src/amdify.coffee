@@ -74,11 +74,17 @@ entry = (opts) ->
           console.log 'ERROR\n', err
         else
           console.log "Saved to #{target}"
-        if watch
-          watcher.watch (script.fullPath for script in parsed.ordered), ({event, file}) ->
-            entry opts
     else if not nothing
       console.log if obj then parsed else parsed.serialize()
+    
+    if watch
+      # but there are nothing to watch... that's why it existed.
+      # so even when there is an error we should at least watch ourselves...
+      files = if parsed.ordered.length > 0
+        (script.fullPath for script in parsed.ordered)
+      else
+        [ parsed.script.fullPath ]  
+      watcher.watch files, ({event, file}) -> entry opts
 
 module.exports =
   run: entry

@@ -8,7 +8,7 @@ _ = require 'underscore'
 async = require './async'
 
 scriptName = (filePath) ->
-  path.join(path.dirname(filePath), path.basename(filePath, path.extname(filePath))).replace(/[\\\/]+/g, '_')
+  path.join(path.dirname(filePath), path.basename(filePath, path.extname(filePath))).replace(/[\\\/\.]+/g, '_')
 
 class ScriptSpec
   # we need to be able to normalize the script name as well...
@@ -58,7 +58,6 @@ class ParsedScript extends ScriptSpec
       else
         @parse moduleMap, cb
   parse: (moduleMap, cb) ->
-    #console.log {parse: @fullPath}
     filePath = path.resolve @fullPath
     fs.readFile filePath, (err, data) =>
       if err
@@ -68,7 +67,7 @@ class ParsedScript extends ScriptSpec
           @parseData filePath, data.toString(), moduleMap
           @parseDependencies moduleMap, cb
         catch e
-          cb e
+          cb {error: e, file: @fullPath}
   parseDependencies: (moduleMap, cb) -> # this tree structure all of the sudden does not work... hmm...
     #console.log {parseDependencies: @fullPath, depends: @depends}
     resolveDepend = (depend, next) =>
@@ -223,5 +222,6 @@ normalizePath = (filePath) ->
 module.exports =
   parseFile: (filePath, options, cb) ->
     parser = new ScriptMap(options)
-    parser.parse normalizePath(filePath), (err, lastScript) ->
-      cb null, parser
+    normalized = normalizePath(filePath)
+    parser.parse normalized, (err, lastScript) ->
+      cb err, parser
