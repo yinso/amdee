@@ -7,7 +7,8 @@
     "amdify": "./bin/amdify"
   },
   "scripts": {
-    "test": "mocha --compilers coffee:coffee-script --reporter spec"
+    "test": "mocha --compilers coffee:coffee-script --reporter spec",
+    "postdeploy": "make"
   },
   "main": "./src/amdify",
   "dependencies": {
