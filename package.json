@@ -1,6 +1,6 @@
 {
   "name": "amdify",
-  "description": "Convert CommonJS modules into AMD format"
+  "description": "Convert CommonJS modules into AMD format",
   "version": "0.2.0",
   "private": true,
   "dependencies": {
