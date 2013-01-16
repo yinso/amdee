@@ -11,11 +11,6 @@ fs = require 'fs'
 path = require 'path'
 _ = require 'underscore'
 async = require './async'
-argv = require('optimist')
-  .demand(['source'])
-  #.boolean('w')
-  .usage('Usage: amdify [-w] -source <source_module_dir> -target <target_output_dir>')
-  .argv
 
 ###
 # we previously have enough capability - now we need to figure out how to refactor the code
@@ -61,31 +56,8 @@ argv = require('optimist')
 # we can build on top of EventEmitter.
 
 {parseFile} = require './parser'
-{EventEmitter} = require 'events'
 
-# we also want to have the ability to watch for the files to change...
-# because we have a list of the files that should be watched once we've done the parsing
-
-# should I pass in a callback? might be easier..
-class Watcher extends EventEmitter
-  constructor: () ->
-    @inner = {}
-  addFileMap: (scripts, onChange) ->
-    # the goal is to determine whether something exists...
-    # we also want to anything that
-    @removeOldWatchers scripts
-    helper = (script) =>
-      console.log "[watch:add] #{script.name} => #{script.fullPath}"
-      @inner[script.name] = fs.watch script.fullPath, (evt, fileName) =>
-        console.log "[watch:#{evt}] #{script.name} => #{script.fullPath}"
-        onChange {event: evt, file: script, fullPath: script.fullPath}
-    for script in scripts
-      helper script
-    #async.forEach scripts, helper, cb
-  removeOldWatchers: (scripts) ->
-    for file, watcher of @inner
-      watcher.close()
-      delete @inner[file]
+Watcher = require './watcher'
 
 watcher = new Watcher()
 
@@ -103,9 +75,11 @@ entry = (opts) ->
         else
           console.log "Saved to #{target}"
         if watch
-          watcher.addFileMap parsed.ordered, ({event, file, fullPath}) ->
+          watcher.watch (script.fullPath for script in parsed.ordered), ({event, file}) ->
             entry opts
     else if not nothing
       console.log if obj then parsed else parsed.serialize()
 
-entry argv
+module.exports =
+  run: entry
+    

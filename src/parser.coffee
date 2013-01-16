@@ -185,7 +185,7 @@ class ScriptMap
     # return the last script name...
     exportName = scriptName @script.name
     """
-define([#{externals}], function(#{depends}) {
+define([#{externals}], function(require,exports,module) {
 
 #{scripts}
 
@@ -194,9 +194,23 @@ define([#{externals}], function(#{depends}) {
 
 """
 
+extensions = ['.coffee', '.js']
+
+normalizePath = (filePath) ->
+  # because a file can have dot in them without being an extension so we need to test
+  # out whether or not it's the list of extensions we support.
+  # if not we assume there is no extension...
+  match = filePath.match /(\.[^\.\/\\]+)$/
+  if match
+    if _.find(extensions, (ext) -> ext == match[0])
+      path.join path.dirname(filePath), path.basename(filePath, path.extname(filePath))
+    else
+      filePath
+  else
+    filePath
 
 module.exports =
   parseFile: (filePath, cb) ->
     parser = new ScriptMap()
-    parser.parse filePath, (err, lastScript) ->
+    parser.parse normalizePath(filePath), (err, lastScript) ->
       cb null, parser
