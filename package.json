@@ -1,7 +1,7 @@
 {
   "name": "amdify",
   "description": "Convert CommonJS modules into AMD format"
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "dependencies": {
     "optimist": "= 0.3.1",    
@@ -10,9 +10,13 @@
     "underscore": "= 1.3.1",
     "resolve": "= 0.2.1",
     "mkdirp": "= 0.3.1",
-    "handlebars-precompiler": "=1.0.2",
-    "hbs": "=2.0.1",
     "pegjs": "=0.7.0",
     "async": "=0.1.22"
+  },
+  "devDependencies": {
+    "mocha": "~ 1.7.3",
+    "supervisor": "~ 0.5.0",
+    "supertest": "~0.5.1",
+    "libxmljs": "~ 0.6.1"
   }
 }

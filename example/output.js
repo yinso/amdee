@@ -1,4 +1,4 @@
-define(['require','exports','module','underscore','assert','async','resolve'], function(require,exports,module,underscore,assert,async,resolve) {
+define(['require','exports','module','underscore','assert','async','resolve'], function(require,exports,module) {
 
 
 // /Users/yc/code/amdify/example/test/baz.coffee
