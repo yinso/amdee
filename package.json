@@ -7,10 +7,11 @@
     "amdify": "./bin/amdify"
   },
   "scripts": {
-    "test": "mocha --compilers coffee:coffee-script --reporter spec",
-    "postdeploy": "make"
+    "test": "make test",
+    "install": "make",
+    "prepublish": "make"
   },
-  "main": "./src/amdify",
+  "main": "./lib/amdify",
   "dependencies": {
     "optimist": "= 0.3.1",    
     "coffee-script": "= 1.4.0",

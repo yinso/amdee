@@ -1,7 +1,5 @@
 #!/usr/bin/env node # -*- javascript -*- -p
 
-require('coffee-script');
-
 // is this 
 var argv = require('optimist')
   .demand(['source'])
@@ -9,7 +7,7 @@ var argv = require('optimist')
   .usage('Usage: amdify [-w] -source <source_module_dir> -target <target_output_dir>')
   .argv;
 
-var amdify = require('../src/amdify');
+var amdify = require('../lib/amdify');
 
 amdify.run(argv);
 
