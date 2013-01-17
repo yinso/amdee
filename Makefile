@@ -16,7 +16,10 @@ lib/nocomment.js: grammar/nocomment.pegjs
 grammar: lib/nocomment.js
 
 .PHONY: objects
-objects: $(COFFEE_OBJECTS)
+objects: $(COFFEE_OBJECTS) package.json
+
+package.json: package.bean
+	./node_modules/.bin/bean
 
 .PHONY: test
 test: build

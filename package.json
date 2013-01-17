@@ -1,31 +1,36 @@
 {
   "name": "amdify",
-  "description": "Convert CommonJS modules into AMD format",
+  "author": "YC <yinso.chen@gmail.com>",
+  "description": "Converting CommonJS modules into AMD format",
   "version": "0.2.0",
-  "private": true,
+  "perferGlobal": true,
   "bin": {
-    "amdify": "./bin/amdify"
+    "bean": "./bin/amdify"
   },
   "scripts": {
     "test": "make test",
-    "install": "make",
     "prepublish": "make"
   },
   "main": "./lib/amdify",
   "dependencies": {
-    "optimist": "= 0.3.1",    
-    "coffee-script": "= 1.4.0",
-    "chai": "= 1.4.2",
-    "underscore": "= 1.3.1",
-    "resolve": "= 0.2.1",
-    "mkdirp": "= 0.3.1",
+    "optimist": "=0.3.1",
+    "coffee-script": "=1.4.0",
+    "chai": "=1.4.2",
+    "underscore": "=1.3.1",
+    "resolve": "=0.2.1",
+    "mkdirp": "=0.3.1",
     "pegjs": "=0.7.0",
     "async": "=0.1.22"
   },
   "devDependencies": {
-    "mocha": "~ 1.7.3",
-    "supervisor": "~ 0.5.0",
-    "supertest": "~0.5.1",
-    "libxmljs": "~ 0.6.1"
-  }
+    "coffee-bean": "=0.1.0",
+    "mocha": "=1.7.3"
+  },
+  "license": "MIT",
+  "keywords": [
+    "CommonJS",
+    "AMD",
+    "requirejs",
+    "require"
+  ]
 }
