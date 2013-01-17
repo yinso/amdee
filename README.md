@@ -58,7 +58,7 @@ Usage
 
 On Command line:
 
-    $ node amdify.js --source <module_file> --target <output_file>
+    $ amdify --source <module_file> --target <output_file>
 
 In Node program (below is written in coffee-script with expressjs)
 
@@ -98,5 +98,9 @@ Ensure your main.coffee to include the needed dependencies the usual way.
 
 Any relative dependencies will be resolved into the same file, whereas the external dependencies will be loaded as separate scripts.
 
+License
+======
+
+Amdify is released under [MIT License](http://opensource.org/licenses/MIT).
 
 
