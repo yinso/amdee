@@ -44,7 +44,9 @@ class ScriptSpec
   isRelative: (rspec) ->
     (rspec.match(/^\.\.?\//) != null) or false
   serializeRequire: () ->
-    if not @relative
+    if @core
+      "require('builtin').#{@rspec}"
+    else if not @relative
       "require('#{@rspec}')"
     else
       "#{scriptName(@name)}" # just show the name for now.
@@ -188,9 +190,20 @@ require.config(#{JSON.stringify(@requirejs)});
 """
     else
       ''
+  getExternalModules: () ->
+    result = []
+    hasBuiltin = false
+    for key, script of @externals
+      if script.core
+        if not hasBuiltin
+          result.push 'builtin'
+          hasBuiltin = true
+      else
+        result.push key
+    result
   serialize: () ->
     scripts = (script.serialize() for script in @ordered).join('')
-    depends = ['require','exports','module'].concat (key for key, val of @externals)
+    depends = ['require','exports','module'].concat @getExternalModules()
     externals = ("'#{val}'" for val in depends)
     # return the last script name...
     exportName = scriptName @script.name
