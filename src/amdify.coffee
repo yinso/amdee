@@ -100,11 +100,7 @@ compile = (source, target, opts, cb) ->
           cb null, parsed
 
 # this is just going to be purely asynchronous without chaining them together.
-compileAndWatch = (sources, target, opts) ->
-  targets = for source in sources
-    source: source
-    target: path.join(target, path.basename(source))
-    watcher: new Watcher()
+compileAndWatch = (targets, opts) ->
   watchHelper = (source, target, watcher, parsed) ->
     files = if parsed.ordered.length > 0
       (script.fullPath for script in parsed.ordered)
@@ -121,8 +117,12 @@ compileAndWatch = (sources, target, opts) ->
   for {source, target, watcher} in targets
     helper source, target, watcher
 
-monitor = ({sources, target, requirejs}) ->
-  compileAndWatch sources, target, {requirejs: requirejs}
+monitor = ({files, requirejs}) ->
+  targets = for {source, target} in files
+    source: source
+    target: target
+    watcher: new Watcher()
+  compileAndWatch targets, {requirejs: requirejs}
     
 
 module.exports =
