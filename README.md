@@ -84,7 +84,7 @@ In Node program (below is written in coffee-script with expressjs)
             'jquery.livequery': ['jquery']
             'jquery.address': ['jquery']
 
-The `watch: true` setting will ensure that if main.coffee & its dependencies are changed, `main.js` will be recompiled.
+The `watch: true` setting will ensure that if main.coffee & its relative dependencies are changed, `main.js` will be recompiled.
 
 Ensure your main.coffee to include the needed dependencies the usual way.
 
@@ -104,3 +104,46 @@ License
 Amdify is released under [MIT License](http://opensource.org/licenses/MIT).
 
 
+Node Core Modules
+=============
+
+
+* Buffer - not available in browser
+* child_process - not available
+* cluster - not available nor make sense
+* crypto - possible but might not make sense
+* dns - possible but might not make sense
+* domain - not available
+* EventEmitter - this one is doable.
+* fs - probably not make sense
+* globals
+  * process - might not make sense
+  * console - certainly needed
+  * require - yes definitely needed
+  * __filename
+  * __dirname
+  * module
+  * exports
+  * setTimeout 
+  * clearTimeout
+  * setInterval
+  * clearInterval
+* http - not sure if make sense, but partial request & response do
+* https - same thing
+* net - same thing
+* os - might not make sense either.
+* path - some of the capabilities make sense; but not sure all of
+  it...
+* process - not sure...
+* punycode - don't even know what this does...
+* querstring - definitely (might be liftable)
+* readline - not unless implementing a REPL
+* console - yes
+* stream - not sure... probably not
+* string_decoder - probably not
+* ssl - no
+* udp - no
+* url - yes
+* util - yes
+* vm - no
+* zlib - possible...

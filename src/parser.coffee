@@ -21,6 +21,9 @@ class ScriptSpec
     @basePath = basePath
     @rootPath = rootPath
     @core = resolve.isCore(rspec) or false
+    if @core and (not resolve.isCoreSupported(rspec))
+      # we'll need to throw an error unless supressed.
+      throw new Error("unsupported_builtin_module: '#{rspec}'")
     if @isExternal
       @name = @rspec
       @fullPath = @rspec
@@ -69,7 +72,6 @@ class ParsedScript extends ScriptSpec
         catch e
           cb {error: e, file: @fullPath}
   parseDependencies: (moduleMap, cb) -> # this tree structure all of the sudden does not work... hmm...
-    #console.log {parseDependencies: @fullPath, depends: @depends}
     resolveDepend = (depend, next) =>
       if moduleMap.hasScriptByScript depend
         next null, depend
