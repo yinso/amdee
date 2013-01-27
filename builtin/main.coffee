@@ -3,6 +3,7 @@ assert = require './assert'
 events = require './events'
 url = require './url'
 querystring = require './querystring'
+path = require './path'
 
 module.exports =
   util: util
@@ -10,3 +11,4 @@ module.exports =
   events: events
   url: url
   querystring: querystring
+  path: path
