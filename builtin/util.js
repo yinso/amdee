@@ -19,10 +19,10 @@
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
 // USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-// yc - 2013/01/26 - remove deprecated functions
+// yc - 2013/01/26 - remove deprecated functions & change exports to module.exports
 
 var formatRegExp = /%[sdj%]/g;
-exports.format = function(f) {
+module.exports.format = function(f) {
   if (typeof f !== 'string') {
     var objects = [];
     for (var i = 0; i < arguments.length; i++) {
@@ -59,7 +59,7 @@ exports.format = function(f) {
 // Mark that a method should not be used.
 // Returns a modified function which warns once by default.
 // If --no-deprecation is set, then it is a no-op.
-exports.deprecate = function(fn, msg) {
+module.exports.deprecate = function(fn, msg) {
   if (process.noDeprecation === true) {
     return fn;
   }
@@ -81,26 +81,26 @@ exports.deprecate = function(fn, msg) {
 };
 
 
-exports.print = function() {
+module.exports.print = function() {
   for (var i = 0, len = arguments.length; i < len; ++i) {
     process.stdout.write(String(arguments[i]));
   }
 };
 
 
-exports.puts = function() {
+module.exports.puts = function() {
   for (var i = 0, len = arguments.length; i < len; ++i) {
     process.stdout.write(arguments[i] + '\n');
   }
 };
 
 
-exports.debug = function(x) {
+module.exports.debug = function(x) {
   process.stderr.write('DEBUG: ' + x + '\n');
 };
 
 
-var error = exports.error = function(x) {
+var error = module.exports.error = function(x) {
   for (var i = 0, len = arguments.length; i < len; ++i) {
     process.stderr.write(arguments[i] + '\n');
   }
@@ -129,7 +129,7 @@ function inspect(obj, opts) {
     ctx.showHidden = opts;
   } else if (opts) {
     // got an "options" object
-    exports._extend(ctx, opts);
+    module.exports._extend(ctx, opts);
   }
   // set default options
   if (typeof ctx.showHidden === 'undefined') ctx.showHidden = false;
@@ -139,7 +139,7 @@ function inspect(obj, opts) {
   if (ctx.colors) ctx.stylize = stylizeWithColor;
   return formatValue(ctx, obj, ctx.depth);
 }
-exports.inspect = inspect;
+module.exports.inspect = inspect;
 
 
 // http://en.wikipedia.org/wiki/ANSI_escape_code#graphics
@@ -206,7 +206,7 @@ function formatValue(ctx, value, recurseTimes) {
   // Check that value is an object with an inspect function on it
   if (ctx.customInspect && value && typeof value.inspect === 'function' &&
       // Filter out the util module, it's inspect function is special
-      value.inspect !== exports.inspect &&
+      value.inspect !== module.exports.inspect &&
       // Also filter out any prototype objects using the circular check.
       !(value.constructor && value.constructor.prototype === value)) {
     return String(value.inspect(recurseTimes));
@@ -436,25 +436,25 @@ function isArray(ar) {
   return Array.isArray(ar) ||
          (typeof ar === 'object' && objectToString(ar) === '[object Array]');
 }
-exports.isArray = isArray;
+module.exports.isArray = isArray;
 
 
 function isRegExp(re) {
   return typeof re === 'object' && objectToString(re) === '[object RegExp]';
 }
-exports.isRegExp = isRegExp;
+module.exports.isRegExp = isRegExp;
 
 
 function isDate(d) {
   return typeof d === 'object' && objectToString(d) === '[object Date]';
 }
-exports.isDate = isDate;
+module.exports.isDate = isDate;
 
 
 function isError(e) {
   return typeof e === 'object' && objectToString(e) === '[object Error]';
 }
-exports.isError = isError;
+module.exports.isError = isError;
 
 
 function objectToString(o) {
@@ -479,8 +479,8 @@ function timestamp() {
 }
 
 
-exports.log = function(msg) {
-  exports.puts(timestamp() + ' - ' + msg.toString());
+module.exports.log = function(msg) {
+  module.exports.puts(timestamp() + ' - ' + msg.toString());
 };
 
 /**
@@ -496,7 +496,7 @@ exports.log = function(msg) {
  *     prototype.
  * @param {function} superCtor Constructor function to inherit prototype from.
  */
-exports.inherits = function(ctor, superCtor) {
+module.exports.inherits = function(ctor, superCtor) {
   ctor.super_ = superCtor;
   ctor.prototype = Object.create(superCtor.prototype, {
     constructor: {
@@ -508,7 +508,7 @@ exports.inherits = function(ctor, superCtor) {
   });
 };
 
-exports._extend = function(origin, add) {
+module.exports._extend = function(origin, add) {
   // Don't do anything if add isn't an object
   if (!add || typeof add !== 'object') return origin;
 
