@@ -108,7 +108,7 @@ compileAndWatch = (targets, opts) ->
       [ parsed.script.fullPath ]
     watcher.watch files, ({event, file}) -> helper source, target, watcher
   helper = (source, target, watcher) ->
-    compile source, target, (err, parsed) ->
+    compile source, target, opts, (err, parsed) ->
       if err
         console.error "COMPILE ERROR: #{source}"
         console.error err
