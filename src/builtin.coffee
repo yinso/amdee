@@ -17,9 +17,9 @@ builtins =
   https: false
   net: false
   os: false
-  path: false
+  path: true
   punycode: false
-  querystring: false
+  querystring: true
   readline: false
   stream: false
   string_decoder: false
