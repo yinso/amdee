@@ -3,12 +3,13 @@
 name: 'amdify'
 author: 'YC <yinso.chen@gmail.com>'
 description: 'Converting CommonJS modules into AMD format'
-version: '0.2.0'
+version: '0.3.0'
 perferGlobal: true
 bin:
   bean: "./bin/amdify"
 scripts:
   test: 'make test'
+  install: 'make'
   prepublish: 'make'
 main: './lib/amdify'
 dependencies:
