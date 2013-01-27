@@ -88,7 +88,43 @@ entry = (opts) ->
       watcher.watch files, ({event, file}) -> entry opts
 
 # compiling a bunch of files @ once...
+compile = (source, target, opts, cb) ->
+  parseFile source, opts, (err, parsed) ->
+    if err
+      cb err null
+    else
+      fs.writeFile target, parsed.serialize(), (err) ->
+        if err
+          cb err, null
+        else
+          cb null, parsed
+
+# this is just going to be purely asynchronous without chaining them together.
+compileAndWatch = (sources, target, opts) ->
+  targets = for source in sources
+    source: source
+    target: path.join(target, path.basename(source))
+    watcher: new Watcher()
+  watchHelper = (source, target, watcher, parsed) ->
+    files = if parsed.ordered.length > 0
+      (script.fullPath for script in parsed.ordered)
+    else
+      [ parsed.script.fullPath ]
+    watcher.watch files, ({event, file}) -> helper source, target, watcher
+  helper = (source, target, watcher) ->
+    compile source, target, (err, parsed) ->
+      if err
+        console.error "COMPILE ERROR: #{source}"
+        console.error err
+      else
+        watchHelper source, target, watcher, parsed
+  for {source, target, watcher} in targets
+    helper source, target, watcher
+
+monitor = ({sources, target, requirejs}) ->
+  compileAndWatch sources, target, {requirejs: requirejs}
+    
 
 module.exports =
   run: entry
-    
+  monitor: monitor

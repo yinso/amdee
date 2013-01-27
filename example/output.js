@@ -1,5 +1,5 @@
 
-define(['require','exports','module','underscore','assert','async','resolve'], function(require,exports,module) {
+define(['require','exports','module','underscore','builtin','async','resolve'], function(require,exports,module) {
 
 
 // /Users/yc/code/amdify/example/test/baz.coffee
@@ -10,7 +10,7 @@ var example_test_baz = (function() {
 
   _ = require('underscore');
 
-  assert = require('assert');
+  assert = require('builtin').assert;
 
   async = require('async');
 
@@ -49,7 +49,7 @@ var example_test_bar = (function() {
 
   _ = require('underscore');
 
-  assert = require('assert');
+  assert = require('builtin').assert;
 
   Baz = example_test_baz;
 
@@ -86,7 +86,7 @@ var example_foo = (function() {
 
   _ = require('underscore');
 
-  assert = require('assert');
+  assert = require('builtin').assert;
 
   Bar = example_test_bar;
 
