@@ -1,8 +1,13 @@
+qs = require './querystring'
 
-urlParse = (url) ->
-  parser = document.createElement('a')
-  parser.href = url
-  parser
+urlParse = (url, parseQueryString = true, slashesDenoteHost = false) ->
+  parsed = document.createElement('a')
+  if slashesDenoteHost and url.match(/^\/\//)
+    url = "http:#{url}"
+  parsed.href = url
+  if parseQueryString
+    parsed.query = qs.parse(url.search)
+  parsed
 
 urlFormat = ({protocol, auth, hostname, port, host, pathname, search, query, hash}) ->
   a = document.createElement('a')

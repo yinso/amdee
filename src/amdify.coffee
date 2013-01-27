@@ -56,7 +56,8 @@ async = require './async'
 # we can build on top of EventEmitter.
 
 {parseFile} = require './parser'
-
+path = require 'path'
+async = require 'async'
 Watcher = require './watcher'
 
 watcher = new Watcher()
@@ -85,6 +86,8 @@ entry = (opts) ->
       else
         [ parsed.script.fullPath ]  
       watcher.watch files, ({event, file}) -> entry opts
+
+# compiling a bunch of files @ once...
 
 module.exports =
   run: entry
