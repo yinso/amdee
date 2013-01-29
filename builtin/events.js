@@ -27,7 +27,7 @@ function EventEmitter() {
   this._events = this._events || null;
   this._maxListeners = this._maxListeners || defaultMaxListeners;
 }
-exports.EventEmitter = EventEmitter;
+module.exports.EventEmitter = EventEmitter;
 
 // By default EventEmitters will print a warning if more than
 // 10 listeners are added to it. This is a useful default which

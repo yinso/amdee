@@ -130,11 +130,10 @@ class ParsedScript extends ScriptSpec
     """
 
 // #{@fullPath}
-var #{scriptName(@name)} = (function(module, exports) {
-  module.exports = exports;
+var #{scriptName(@name)} = (function(module) {
   #{output.join('')}
-  return exports;
-})({}, {});
+  return module.exports;
+})({exports: {}});
 
 """
 
@@ -203,14 +202,15 @@ require.config(#{JSON.stringify(@requirejs)});
     result
   serialize: () ->
     scripts = (script.serialize() for script in @ordered).join('')
-    depends = ['require','exports','module'].concat @getExternalModules()
+    baseDepends = ['require']
+    depends = [].concat baseDepends, @getExternalModules()
     externals = ("'#{val}'" for val in depends)
     # return the last script name...
     exportName = scriptName @script.name
     requireJS = @serializeRequireJS()
     """
 #{requireJS}
-define([#{externals}], function(require,exports,module) {
+define([#{externals}], function(#{baseDepends}) {
 
 #{scripts}
 
