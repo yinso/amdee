@@ -6,7 +6,7 @@ urlParse = (url, parseQueryString = true, slashesDenoteHost = false) ->
     url = "http:#{url}"
   parsed.href = url
   if parseQueryString
-    parsed.query = qs.parse(url.search)
+    parsed.query = qs.parse(parsed.search)
   parsed
 
 urlFormat = ({protocol, auth, hostname, port, host, pathname, search, query, hash}) ->

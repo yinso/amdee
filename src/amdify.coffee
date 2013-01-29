@@ -48,12 +48,6 @@ async = require './async'
 # 
 ###
 
-# let's start by parsing a single file in async style.
-
-# the output of the parseFile needs to be an
-# this is the basic parser... the goal is to then encounter events and throw them out.
-# i.e. each spec should causes an event to occur.
-# we can build on top of EventEmitter.
 
 {parseFile} = require './parser'
 path = require 'path'
@@ -91,7 +85,7 @@ entry = (opts) ->
 compile = (source, target, opts, cb) ->
   parseFile source, opts, (err, parsed) ->
     if err
-      cb err null
+      cb err, null
     else
       fs.writeFile target, parsed.serialize(), (err) ->
         if err
