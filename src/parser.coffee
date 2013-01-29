@@ -130,11 +130,15 @@ class ParsedScript extends ScriptSpec
     """
 
 // #{@fullPath}
-var #{scriptName(@name)} = (function() {
-  var module = { exports: {} }; // do not use exports only
+var #{scriptName(@name)} = (function(module) {
+  var exports = module.exports;
+  //var module = { exports: {} }; // do not use exports only
   #{output.join('')}
+  if (module.exports !== exports) { // exports have been re-assigned.
+    module.exports = exports;
+  }
   return module.exports;
-})();
+})({exports: {}});
 
 """
 
