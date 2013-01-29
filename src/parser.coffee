@@ -130,11 +130,11 @@ class ParsedScript extends ScriptSpec
     """
 
 // #{@fullPath}
-var #{scriptName(@name)} = (function(module) {
-  var exports = module.exports;
+var #{scriptName(@name)} = (function(module, exports) {
+  module.exports = exports;
   #{output.join('')}
   return exports;
-})({exports: {}});
+})({}, {});
 
 """
 
