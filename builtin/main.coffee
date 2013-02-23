@@ -1,3 +1,5 @@
+require './json2'
+require './fauxconsole'
 util = require './util'
 assert = require './assert'
 events = require './events'

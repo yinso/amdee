@@ -21,7 +21,7 @@
 
 // yc - 1/26/2013 - remove domain for amdify
 
-var isArray = Array.isArray;
+var isArray = Array.isArray ? Array.isArray : function(ary) { return ary instanceof Array; };
 
 function EventEmitter() {
   this._events = this._events || null;
