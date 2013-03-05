@@ -6,7 +6,7 @@ description: 'Converting CommonJS modules into AMD format'
 version: '0.3.0'
 perferGlobal: true
 bin:
-  bean: "./bin/amdify"
+  bean: "./bin/bean"
 scripts:
   test: 'make test'
   install: 'make'
