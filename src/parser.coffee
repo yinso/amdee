@@ -8,7 +8,7 @@ _ = require 'underscore'
 async = require './async'
 
 scriptName = (filePath) ->
-  path.join(path.dirname(filePath), path.basename(filePath, path.extname(filePath))).replace(/[\\\/\.]+/g, '_')
+  path.join(path.dirname(filePath), path.basename(filePath, path.extname(filePath))).replace(/[\-\\\/\.]+/g, '_')
 
 class ScriptSpec
   # we need to be able to normalize the script name as well...
