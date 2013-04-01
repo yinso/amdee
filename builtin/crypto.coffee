@@ -16,7 +16,7 @@ ifAsync = (res, cb) ->
 mathRandomBytes = (size) ->
   ary = new Array size
   for i in [0...size] by 1
-    if (i & 0x03) === 0
+    if (i & 0x03) == 0
       r = Math.random() * 0x100000000;
     ary[i] = r >>> ((i & 0x03) << 3) & 0xff
   ary
