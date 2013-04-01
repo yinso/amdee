@@ -8,7 +8,7 @@ builtins =
   assert: true
   buffer: false
   child_process: false
-  crypto: false
+  crypto: true
   dns: false
   domain: false
   events: true
