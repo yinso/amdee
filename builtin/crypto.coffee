@@ -28,3 +28,4 @@ windowCryptoRandomBytes = (size) ->
 
 module.exports =
   randomBytes: randomBytes
+  mathRandomBytes: mathRandomBytes
