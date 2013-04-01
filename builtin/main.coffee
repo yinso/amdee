@@ -6,6 +6,7 @@ events = require './events'
 url = require './url'
 querystring = require './querystring'
 path = require './path'
+crypto = require './crypto'
 
 module.exports =
   util: util
@@ -14,3 +15,4 @@ module.exports =
   url: url
   querystring: querystring
   path: path
+  crypto: crypto

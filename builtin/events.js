@@ -100,6 +100,9 @@ EventEmitter.prototype.emit = function(type) {
   }
 };
 
+EventEmitter.prototype.trigger = EventEmitter.prototype.emit;
+
+
 EventEmitter.prototype.addListener = function(type, listener) {
   if ('function' !== typeof listener) {
     throw new Error('addListener only takes instances of Function');
@@ -207,6 +210,9 @@ EventEmitter.prototype.removeListener = function(type, listener) {
 
   return this;
 };
+
+EventEmitter.prototype.off = EventEmitter.prototype.removeListener;
+
 
 EventEmitter.prototype.removeAllListeners = function(type) {
   if (!this._events) return this;
