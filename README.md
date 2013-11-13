@@ -1,17 +1,17 @@
-# Amdify
+# Amdee
 
 ## Overview
 
-Amdify is a command-line tool for converting Node style packages into client-side scripts that cooperates with (requireJS)[http://www.requirejs.org].
+Amdee is a command-line tool for converting Node style packages into client-side scripts that cooperates with (requireJS)[http://www.requirejs.org].
 
-The difference between Amdify and other systems like Browserify is
-that Amdify does not compile everything into a single script; it
+The difference between Amdee and other systems like Browserify is
+that Amdee does not compile everything into a single script; it
 compiles only the files within the current node module into a single
 script, and expects requireJS to serve the external modules.
 
-Amdify also provides many (but not all) core modules from Node for the client-side as well.
+Amdee also provides many (but not all) core modules from Node for the client-side as well.
 
-Amdify will convert a script, along with its relative dependencies within a package, into a single javascript file.  All of the relative dependencies will be resolved to pure javascript variable, i.e., 
+Amdee will convert a script, along with its relative dependencies within a package, into a single javascript file.  All of the relative dependencies will be resolved to pure javascript variable, i.e., 
 
     // main
     var Foo = require('./foo');
@@ -53,29 +53,29 @@ And then you can setup the shim for requireJS as following:
         }
     }); 
 
-The config object for requireJS can be passed into the `requirejs` attribute of the `amdify.run` function, which is further described below.
+The config object for requireJS can be passed into the `requirejs` attribute of the `amdee.run` function, which is further described below.
 
 Installation
 ---------
 
-    $ npm install -g amdify
+    $ npm install -g amdee
 
 Usage
 -----
 
 On Command line:
 
-    $ amdify --source <module_file> --target <output_file>
+    $ amdee --source <module_file> --target <output_file>
 
 In Node program (below is written in coffee-script with expressjs)
 
     express = require 'express'
-    amdify = require 'amdify'
+    amdee = require 'amdee'
     app = express()
 
     app.configure ->
       # ...
-      amdify.run
+      amdee.run
         source: './client/main.coffee'
         target: './public/js/main.js'
         watch: true
@@ -108,7 +108,7 @@ Any relative dependencies will be resolved into the same file, whereas the exter
 License
 ======
 
-Amdify is released under [MIT License](http://opensource.org/licenses/MIT).
+Amdee is released under [MIT License](http://opensource.org/licenses/MIT).
 
 
 Node Core Modules
