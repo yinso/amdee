@@ -4,6 +4,13 @@
 
 Amdify is a command-line tool for converting Node style packages into client-side scripts that cooperates with (requireJS)[http://www.requirejs.org].
 
+The difference between Amdify and other systems like Browserify is
+that Amdify does not compile everything into a single script; it
+compiles only the files within the current node module into a single
+script, and expects requireJS to serve the external modules.
+
+Amdify also provides many (but not all) core modules from Node for the client-side as well.
+
 Amdify will convert a script, along with its relative dependencies within a package, into a single javascript file.  All of the relative dependencies will be resolved to pure javascript variable, i.e., 
 
     // main
@@ -110,12 +117,12 @@ Node Core Modules
 
 * Buffer - not available in browser
 * child_process - not available
-* cluster - not available nor make sense
-* crypto - possible but might not make sense
-* dns - possible but might not make sense
+* cluster - not available in browser
+* crypto - not available
+* dns - not available
 * domain - not available
-* EventEmitter - this one is doable.
-* fs - probably not make sense
+* EventEmitter - available
+* fs - not available
 * globals
   * process - might not make sense
   * console - certainly needed
@@ -136,14 +143,14 @@ Node Core Modules
   it...
 * process - not sure...
 * punycode - don't even know what this does...
-* querstring - definitely (might be liftable)
-* readline - not unless implementing a REPL
+* querstring - available
+* readline - not available
 * console - yes
-* stream - not sure... probably not
-* string_decoder - probably not
-* ssl - no
-* udp - no
+* stream - not available
+* string_decoder - not available
+* ssl - not available
+* udp - not available
 * url - yes
 * util - yes
-* vm - no
-* zlib - possible...
+* vm - not avialable
+* zlib - not available
