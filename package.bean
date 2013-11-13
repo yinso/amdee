@@ -1,17 +1,17 @@
 # -*- coffee -*- -p # emacs mode binding
 
-name: 'amdify'
+name: 'amdee'
 author: 'YC <yinso.chen@gmail.com>'
 description: 'Converting CommonJS modules into AMD format'
 version: '0.3.0'
 perferGlobal: true
 bin:
-  amdify: "./bin/amdify"
+  amdee: "./bin/amdee"
 scripts:
   test: 'make test'
   install: 'make'
   prepublish: 'make'
-main: './lib/amdify'
+main: './lib/amdee'
 dependencies:
   optimist: '=0.3.1'
   'coffee-script': '=1.4.0'

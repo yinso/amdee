@@ -1,0 +1,11 @@
+#!/usr/bin/env node # -*- javascript -*- -p
+
+var argv = require('optimist')
+  .demand(['source'])
+  .usage('Usage: amdee -source <source_module_dir> -target <target_output_dir>')
+  .argv;
+
+var amdee = require('../lib/amdee');
+
+amdee.run(argv);
+
