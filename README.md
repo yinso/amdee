@@ -67,7 +67,7 @@ Usage
 
 On Command line:
 
-    $ amdee --source <module_file> --target <output_file>
+    $ amdee --source <module_file> --target <output_file> [--recursive] [--watch]
 
 In Node program (below is written in coffee-script with expressjs)
 

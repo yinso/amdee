@@ -26,12 +26,66 @@ parser = require '../lib/nocomment'
 resolve = require './resolve'
 coffeeScript = require 'coffee-script'
 _ = require 'underscore'
+{EventEmitter} = require 'events'
+
+
+###
+fs = require 'fs'
+_ = require 'underscore'
+
+class Watcher
+  constructor: () ->
+    @inner = {}
+  mapHelper: (interim, file) ->
+    interim[file] = file
+    interim
+  watchHelper: (filePath, onChange) ->
+    console.log "[watch:add] #{filePath}"
+    @inner[filePath] = fs.watch filePath, (evt, fileName) =>
+      console.log "[watch:#{evt}] #{filePath}"
+      onChange {event: evt, file: filePath}
+  watch: (filePaths, onChange) ->
+    fileMap = _.foldl filePaths, @mapHelper, {}
+    @removeWatchByMap fileMap
+    for filePath in filePaths
+      if not @inner[filePath]
+        @watchHelper filePath, onChange
+  removeWatchByMap: (fileMap) ->
+    for file, watcher of @inner
+      if not fileMap[file]
+        watcher.close()
+        delete @inner[file]
+
+module.exports = Watcher
 
 # a script *is* always a
+###
 
-class Script
-  constructor: (@filePath, @data, @depends, @map) ->
+class Script extends EventEmitter
+  constructor: (@filePath, @data, @depends, @toWatch, @map) ->
     @name = path.join(path.dirname(@filePath), path.basename(@filePath, path.extname(@filePath)))
+    if @toWatch
+      @startWatch()
+  destroy: () ->
+    @stopWatch()
+  startWatch: () ->
+    @watcher = fs.watch path.join(@map.basePath, @filePath), @onWatch
+  stopWatch: () ->
+    if @watcher
+      @watcher.close()
+  onWatch: (evt, fileName) =>
+    helper = () =>
+      @stopWatch()
+      @startWatch()
+    if evt == 'change'
+      process.nextTick () =>
+        console.log '------ CHANGE ------', @filePath
+        @emit 'fileChange', @
+        # restart watch to prevent IDEs (such as Webstorm) using fancy methods to overwrite files that ends up
+        # destroying the file handle monitored by file watcher.
+        @stopWatch()
+        @startWatch()
+  reload: (@data, @depends) ->
   scriptName: (name = @name) ->
     "___" + name.toUpperCase().split('/').join('_') + "___"
   serialize: () ->
@@ -57,19 +111,20 @@ var #{@scriptName(@name)} = (function(module) {
 
 """
 
-class PackageMap
-  @loadScript: (filePath, requirejs, cb) ->
-    if arguments.length == 2
-      cb = arguments[1]
-      requirejs = null
+class PackageMap extends EventEmitter
+  @loadPackage: (filePath, targetPath, toWatch, requireJS, cb) ->
+    if arguments.length == 4
+      cb = arguments[3]
+      requireJS = null
     resolve.resolveModulePath filePath, (err, basePath) =>
       if err
         cb err
       else
-        map = new @ basePath
-        map.initialize filePath, (err, res) ->
-          if requirejs
-            map.requireJS = requirejs
+        map = new @ basePath, toWatch
+        console.log 'loadPackage', filePath, targetPath
+        map.initialize filePath, targetPath, (err, res) ->
+          if requireJS
+            map.requireJS = requireJS
           console.log "******* PROCESS *******", map.name
           console.log "base Path = ", map.basePath
           console.log "main script = ", map.mainPath
@@ -82,43 +137,64 @@ class PackageMap
             cb err
           else
             map.loadScripts cb
-  @loadAndSaveScript: (filePath, targetPath, cb) ->
-    @loadScript filePath, (err, map) ->
+  @loadAndSavePackage: (filePath, targetPath, toWatch, cb) ->
+    @loadPackage filePath, targetPath, toWatch, (err, map) ->
       if err
         cb err
       else
-        map.saveToPath targetPath, (err, actualPath) ->
+        map.savePackage (err, actualPath) ->
           if err
             cb err
           else
             cb null, map, actualPath
+  @loadAndSavePackageRecursive: (filePath, targetPath, toWatch, cb) ->
+    iterHelper = (module, next) =>
+      module.savePackage (err, res) =>
+        if err
+          cb err
+        else
+          console.log "saved to ", res
+          console.log ''
+          module.loadExternalPackages iterHelper, (err, module) =>
+            if err
+              cb err
+            else
+              next null, module
+    @loadAndSavePackage filePath, targetPath, toWatch, (err, map) =>
+      if err
+        cb err
+      else
+        map.loadExternalPackages iterHelper, cb
 
-  constructor: (@basePath) ->
+  constructor: (@basePath, @toWatch = false) ->
     @name = path.basename @basePath
     @scripts = {} # these are the files to be added to a single package.
     @depends = [] # a list of scripts that are not yet processed.
     @externals = []
     @loadedModules = {}
-  initialize: (filePath, cb) ->
-    resolve.readPackageJSON @basePath, (err, res) =>
+  initialize: (filePath, targetPath, cb) ->
+    @normalizeTargetPath targetPath, (err, res) =>
       if err
-        cb err
-      else
-        if res.amdee?.main or res.main
-          @mainPath = path.relative(@basePath, path.join(@basePath, (res.amdee?.main or res.main)))
-        @skipped = res.amdee?.skip or []
-        @requireJS = res.amdee?.requireJS or null
-        fs.stat filePath, (err, res) =>
-          if err
-            cb err
-          else if res.isDirectory()
-            if not @mainPath
-              cb new Error("package.json missing amdee.main and main; file is a directory")
-            else
+        return cb err
+      resolve.readPackageJSON @basePath, (err, res) =>
+        if err
+          cb err
+        else
+          if res.amdee?.main or res.main
+            @mainPath = path.relative(@basePath, path.join(@basePath, (res.amdee?.main or res.main)))
+          @skipped = res.amdee?.skip or []
+          @requireJS = res.amdee?.requireJS or null
+          fs.stat filePath, (err, res) =>
+            if err
+              cb err
+            else if res.isDirectory()
+              if not @mainPath
+                cb new Error("package.json missing amdee.main and main; file is a directory")
+              else
+                cb null
+            else # this is a file.
+              @mainPath = path.relative(@basePath, filePath)
               cb null
-          else # this is a file.
-            @mainPath = path.relative(@basePath, filePath)
-            cb null
   loadScripts: (cb) ->
     nextHelper = (spec) =>
       if spec
@@ -129,7 +205,7 @@ class PackageMap
           else
             nextHelper @hasUnprocessedSpec()
       else # no more spec.
-        console.log "no more require specs."
+        console.log "no more relative require specs."
         @orderedScripts = @dependencySort()
         cb null, @
     # we'll start from @mainPath.
@@ -172,7 +248,17 @@ class PackageMap
             cb null, script
           catch e
             cb e
-  parseScript: (filePath, data) ->
+  reloadScript: (script, cb) ->
+    fs.readFile path.join(@basePath, script.filePath), 'utf8', (err, data) =>
+      if err
+        cb err
+      else
+        try
+          script = @parseScript script.filePath, data, script
+          cb null, script
+        catch e
+          cb e
+  parseScript: (filePath, data, script = null) ->
     data =
       if path.extname(filePath) == '.coffee'
         coffeeScript.compile(data)
@@ -193,9 +279,45 @@ class PackageMap
           output.push @addDependency obj.require, filePath, depends
     if temp.length > 0
       output.push temp.join('')
-    script = new Script filePath, output, depends, @
+    if script
+      script.reload output, depends
+      script
+    else
+      @bindScript new Script filePath, output, depends, @toWatch, @
+  bindScript: (script) ->
     @scripts[script.name] = script
+    script.on 'fileChange', @reload
     script
+  reload: (script) =>
+    cb = (err, res) =>
+      if err
+        @emit 'reloadError', err
+      else # we are good to go.
+        @savePackage (err, res) =>
+          if err
+            @emit 'reloadSaveError', err
+          else
+            console.log "Reload Successful."
+            @emit 'reloadSaveSuccess'
+    nextHelper = (spec) =>
+      if spec
+        console.log "load required script:", spec, "..."
+        @loadScriptBySpec spec, (err, res) =>
+          if err
+            cb err
+          else
+            nextHelper @hasUnprocessedSpec()
+      else # no more spec.
+        console.log "no more relative require specs."
+        @orderedScripts = @dependencySort()
+        cb null, @
+    console.log "RELOAD", script.filePath, "..."
+    @reloadScript script, (err, script) =>
+      if err
+        @emit 'error', err
+      else
+        nextHelper @hasUnprocessedSpec()
+      # we'll have to determine the
   addDependency: (rspec, filePath, depends) ->
     # this dependency will require us to figure out
     if resolve.isRelative(rspec)
@@ -260,37 +382,22 @@ define([#{externals}], function(#{baseDepends}) {
 });
 
 """
-  saveToPath: (targetPath, cb) ->
+  normalizeTargetPath: (targetPath, cb) ->
+    console.log "normalizeTargetPath", targetPath
     fs.stat targetPath, (err, stat) =>
-      if err # not exist... that's okay.
-        fs.writeFile targetPath, @serialize(), 'utf8', (err) =>
-          if err
-            cb err
-          else
-            cb err, targetPath
-      else if stat.isDirectory() # this is where we should
-        # we'll get the name of the file to b
-        filePath = path.join(targetPath, path.basename(@name + ".js"))
-        fs.writeFile filePath, @serialize(), 'utf8', (err) =>
-          if err
-            cb err
-          else
-            cb null, filePath
-      else # file exists... we'll overwrite it...
-        fs.writeFile targetPath, @serialize(), 'utf8', (err) =>
-          if err
-            cb err
-          else
-            cb err, targetPath
-  saveToPathWithName: (targetPath, cb) ->
-    # if it's a file - we'll use its path.
-    fs.stat targetPath, (err, stat) =>
-      if err # file not exist... do we walk backwards? we should...
-        @saveToPathWithName path.dirname(targetPath), cb
+      if err # file doesn't exist... that's ok.
+        @targetPath = targetPath
       else if stat.isDirectory()
-        @saveToPath targetPath, cb
+        @targetPath = path.join targetPath, path.basename(@name + ".js")
+      else if stat.isFile()
+        @targetPath = targetPath
+      cb null, @
+  savePackage: (cb) ->
+    fs.writeFile @targetPath, @serialize(), 'utf8', (err) =>
+      if err
+        cb err
       else
-        @saveToPath path.dirname(targetPath), cb
+        cb null, @targetPath
   haUnprocessedPackages: () ->
     for spec in @externals
       if not @loadedModules.hasOwnProperty(spec)
@@ -318,10 +425,12 @@ define([#{externals}], function(#{baseDepends}) {
     helper @haUnprocessedPackages()
 
   loadExternalPackage: (spec, cb) ->
+    console.log 'loadExternalPackage', spec
     self = @
     if spec == 'builtin' # this is a special spec.
       filePath = path.join __dirname, '../builtin'
-      PackageMap.loadScript filePath, (err, module) ->
+      targetPath = path.join path.dirname(@targetPath), 'builtin.js'
+      PackageMap.loadPackage filePath, targetPath, @toWatch, (err, module) ->
         if err
           cb err
         else
@@ -332,10 +441,12 @@ define([#{externals}], function(#{baseDepends}) {
         if err
           cb err
         else
-          PackageMap.loadScript modulePath, (err, module) ->
+          targetPath = path.join path.dirname(@targetPath), "#{spec}.js"
+          PackageMap.loadPackage modulePath, targetPath, @toWatch (err, module) ->
             if err
               cb err
             else
+              module.skipped = self.skipped
               self.loadedModules[spec] = module
               cb null, module
 

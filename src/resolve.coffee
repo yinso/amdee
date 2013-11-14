@@ -105,4 +105,3 @@ module.exports =
   resolvePackageJSON: resolvePakcageJson
   readPackageJSON: readPackageJSON
   normalize: normalize
-

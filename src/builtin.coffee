@@ -23,6 +23,7 @@ builtins =
   readline: false
   stream: false
   string_decoder: false
+  module: false
   tls: false
   udp: false
   url: true

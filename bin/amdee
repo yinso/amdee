@@ -4,8 +4,9 @@ var argv = require('optimist')
     .alias('r', 'recursive')
     .alias('s', 'source')
     .alias('t', 'target')
+    .alias('w', 'watch')
     .demand(['source', 'target'])
-    .usage('Usage: amdee -source <source_module_dir> -target <target_output_dir>')
+    .usage('Usage: amdee  [-w|--watch] [-r|--recursive] -s|--source <source_module_dir> -t|--target <target_output_dir>')
     .argv;
 
 var amdee = require('../lib/main');

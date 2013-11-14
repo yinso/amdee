@@ -1,8 +1,23 @@
 PackageMap = require './package'
 
 module.exports.run = (argv) ->
+  if not argv.recursive
+    PackageMap.loadAndSavePackage argv.source, argv.target, argv.watch, (err, map) ->
+      if err
+        console.error "ERROR", err
+      else
+        console.log "#{map.name} saved to #{map.targetPath}"
+  else
+    PackageMap.loadAndSavePackageRecursive argv.source, argv.target, argv.watch, (err, map) ->
+      if err
+        console.error "ERROR", err
+      else
+        console.log "#{map.name} saved to #{map.targetPath}"
+
+
+  ###
   # because the final target isn't anything defined...
-  PackageMap.loadAndSaveScript argv.source, argv.target, (err, map, savedPath) ->
+  PackageMap.loadAndSavePackage argv.source, argv.target, (err, map, savedPath) ->
     if err
       console.error 'ERROR', err
     else
@@ -24,3 +39,4 @@ module.exports.run = (argv) ->
             console.error "ERROR", err
           else
             console.log "Done."
+  ###

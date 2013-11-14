@@ -6,8 +6,10 @@ assert = require 'assert'
 
 describe 'generate script', () ->
   it 'can generate script successfully', (done) ->
-
-    PackageMap.loadScript path.join(__dirname, '../example'), (err, map) ->
+    sourcePath = path.join(__dirname, '../example')
+    targetPath = path.join(__dirname, '../example/target.js')
+    # we'll need to save it to a file now...
+    PackageMap.loadPackage sourcePath, targetPath, (err, map) ->
       if err
         done err
       else
