@@ -57,7 +57,6 @@ var #{@scriptName(@name)} = (function(module) {
 
 """
 
-
 class PackageMap
   @loadScript: (filePath, requirejs, cb) ->
     if arguments.length == 2
@@ -71,6 +70,7 @@ class PackageMap
         map.initialize filePath, (err, res) ->
           if requirejs
             map.requireJS = requirejs
+          console.log "******* PROCESS *******", map.name
           console.log "base Path = ", map.basePath
           console.log "main script = ", map.mainPath
           console.log "skipped modules", map.skipped
@@ -82,10 +82,23 @@ class PackageMap
             cb err
           else
             map.loadScripts cb
+  @loadAndSaveScript: (filePath, targetPath, cb) ->
+    @loadScript filePath, (err, map) ->
+      if err
+        cb err
+      else
+        map.saveToPath targetPath, (err, actualPath) ->
+          if err
+            cb err
+          else
+            cb null, map, actualPath
+  
   constructor: (@basePath) ->
+    @name = path.basename @basePath
     @scripts = {} # these are the files to be added to a single package.
     @depends = [] # a list of scripts that are not yet processed.
     @externals = []
+    @loadedModules = {}
   initialize: (filePath, cb) ->
     resolve.readPackageJSON @basePath, (err, res) =>
       if err
@@ -116,6 +129,7 @@ class PackageMap
           else
             nextHelper @hasUnprocessedSpec()
       else # no more spec.
+        console.log "no more require specs."
         @orderedScripts = @dependencySort()
         cb null, @
     # we'll start from @mainPath.
@@ -145,16 +159,19 @@ class PackageMap
       else
         @loadScript coffeePath, cb
   loadScript: (filePath, cb) ->
-    # the filePath is a relative path...!!!
-    fs.readFile path.join(@basePath, filePath), 'utf8', (err, data) =>
-      if err
-        cb err
-      else
-        try
-          script = @parseScript filePath, data
-          cb null, script
-        catch e
-          cb e
+    if path.extname(filePath) == ''
+      @loadScriptBySpec filePath, cb
+    else
+      # the filePath is a relative path...!!!
+      fs.readFile path.join(@basePath, filePath), 'utf8', (err, data) =>
+        if err
+          cb err
+        else
+          try
+            script = @parseScript filePath, data
+            cb null, script
+          catch e
+            cb e
   parseScript: (filePath, data) ->
     data =
       if path.extname(filePath) == '.coffee'
@@ -253,7 +270,7 @@ define([#{externals}], function(#{baseDepends}) {
             cb err, targetPath
       else if stat.isDirectory() # this is where we should
         # we'll get the name of the file to b
-        filePath = path.join(targetPath, path.basename(@mainScript.name + ".js"))
+        filePath = path.join(targetPath, path.basename(@name + ".js"))
         fs.writeFile filePath, @serialize(), 'utf8', (err) =>
           if err
             cb err
@@ -265,18 +282,84 @@ define([#{externals}], function(#{baseDepends}) {
             cb err
           else
             cb err, targetPath
+  saveToPathWithName: (targetPath, cb) ->
+    # if it's a file - we'll use its path.
+    fs.stat targetPath, (err, stat) =>
+      if err # file not exist... do we walk backwards? we should...
+        @saveToPathWithName path.dirname(targetPath), cb
+      else if stat.isDirectory()
+        @saveToPath targetPath, cb
+      else
+        @saveToPath path.dirname(targetPath), cb
+  haUnprocessedPackages: () ->
+    for spec in @externals
+      if not @loadedModules.hasOwnProperty(spec)
+        return spec
+    return null
+  loadExternalPackages: (iterHelper, cb) ->
+    helper = (spec) =>
+      if spec
+        if not _.contains(@skipped, spec)
+          @loadExternalPackage spec, (err, module) =>
+            if err
+              cb err
+            else
+              iterHelper module, (err, res) =>
+                if err
+                  cb err
+                else
+                  helper @haUnprocessedPackages()
+        else # the spec is skipped.
+          console.log "External Module #{spec} skipped as defined by package.json."
+          helper @hasUnprocessedSpec()
+      else # no more spec.
+        console.log "No more unprocessed external modules."
+        cb null, @
+    helper @haUnprocessedPackages()
+
+  loadExternalPackage: (spec, cb) ->
+    self = @
+    if spec == 'builtin' # this is a special spec.
+      filePath = path.join __dirname, '../builtin'
+      PackageMap.loadScript filePath, (err, module) ->
+        if err
+          cb err
+        else
+          self.loadedModules[spec] = module
+          cb null, module
+    else
+      resolve.resolveModuleRoot spec, @basePath, (err, modulePath) =>
+        if err
+          cb err
+        else
+          PackageMap.loadScript modulePath, (err, module) ->
+            if err
+              cb err
+            else
+              self.loadedModules[spec] = module
+              cb null, module
 
 module.exports.run = (argv) ->
-  PackageMap.loadScript argv.source, (err, map) ->
+  # because the final target isn't anything defined...
+  PackageMap.loadAndSaveScript argv.source, argv.target, (err, map, savedPath) ->
     if err
       console.error 'ERROR', err
-    else if argv.target
-      console.log 'Externals', map.externals
-      map.saveToPath argv.target, (err, targetPath) ->
-        if err
-          console.error 'ERROR', err
-        else
-          console.log "saved to", targetPath
     else
-      console.log 'serialize'
-      console.log map.serialize()
+      console.log "#{map.name} saved to #{savedPath}"
+      if argv.recursive
+        iterHelper = (module, next) ->
+          if err
+            next err
+          else
+            module.saveToPathWithName argv.target, (err, res) ->
+              if err
+                next err
+              else
+                console.log "saved to ", res
+                console.log ''
+                next null, module
+        map.loadExternalPackages iterHelper, (err, res) ->
+          if err
+            console.error "ERROR", err
+          else
+            console.log "Done."

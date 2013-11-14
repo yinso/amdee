@@ -24,16 +24,16 @@ isRelative = (module) ->
   module.indexOf('.') == 0
 
 relativeRoot = (filePath, cb) ->
-  packageHelper = (dirPath)
-  fs.stat path.join(dirPath, "package.json"), (err, stat) ->
-    if err
-      relativeRoot path.dirname(dirPath), cb
-    else
-      cb null, dirPath
+  packageHelper = (dirPath) ->
+    fs.stat path.join(dirPath, "package.json"), (err, stat) ->
+      if err
+        relativeRoot path.dirname(dirPath), cb
+      else
+        cb null, dirPath
   fs.stat filePath, (err, res) ->
     if err
       cb err
-    else if filePath.isFile()
+    else if res.isFile()
       relativeRoot path.dirname(filePath), cb
     else # directory...
       packageHelper filePath
