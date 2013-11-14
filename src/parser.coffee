@@ -10,11 +10,21 @@ async = require './async'
 scriptName = (filePath) ->
   path.join(path.dirname(filePath), path.basename(filePath, path.extname(filePath))).replace(/[\-\\\/\.]+/g, '_')
 
+###
+
+  ScriptSpec represents a single script (either .coffee or .js file).
+
+  @relative - is this a relative module?
+  @isExternal - is this an external module?
+  @rspec - actual require spec itself
+  @basePath - where to look for files for the relative spec.
+  @rootPath - the current process directory. This is used for generating the full on file name... although generally speaking not really needed.
+  @core - is this a "core" nodeJS module
+
+
+###
 class ScriptSpec
-  # we need to be able to normalize the script name as well...
-  # i.e. the script ought to have a name that's based on a top level entry point...
-  # cwd? let's do that for now.
-  constructor: (rspec, basePath, rootPath = process.cwd()) -> # rootPath is something that's 
+  constructor: (rspec, basePath, rootPath = process.cwd()) -> # rootPath is something that's
     @relative = @isRelative(rspec) or false
     @isExternal = not @relative
     @rspec = rspec
@@ -22,15 +32,12 @@ class ScriptSpec
     @rootPath = rootPath
     @core = resolve.isCore(rspec) or false
     if @core and (not resolve.isCoreSupported(rspec))
-      # we'll need to throw an error unless supressed.
       throw new Error("unsupported_builtin_module: '#{rspec}'")
     if @isExternal
       @name = @rspec
       @fullPath = @rspec
     else
       @name = path.relative @rootPath, path.resolve(@basePath, @rspec)
-    # by the type things are constructed we'll have a normalized name to work with - this is great...
-  # this is needed because we need to resolve the relative file spec that does not end in particular sets of extensions.
   resolve: (cb) ->
     if not @relative
       cb null, @rspec
@@ -137,11 +144,6 @@ var #{scriptName(@name)} = (function(module) {
 
 """
 
-# moving the resolution into the scriptMap? that'll be interesting...
-# only script map holds
-
-# now we have a normalized name that's based on process.cwd()
-# so when adding file we'll have to 
 class ScriptMap
   constructor: (options = {}) ->
     {rootPath, requirejs} = options

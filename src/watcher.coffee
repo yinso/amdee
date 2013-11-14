@@ -1,10 +1,6 @@
 fs = require 'fs'
 _ = require 'underscore'
 
-# we also want to have the ability to watch for the files to change...
-# because we have a list of the files that should be watched once we've done the parsing
-
-# should I pass in a callback? might be easier..
 class Watcher
   constructor: () ->
     @inner = {}
@@ -14,7 +10,7 @@ class Watcher
   watchHelper: (filePath, onChange) ->
     console.log "[watch:add] #{filePath}"
     @inner[filePath] = fs.watch filePath, (evt, fileName) =>
-      console.log "[watch:#{evt}] #{filePath}" # why did it trigger twice?
+      console.log "[watch:#{evt}] #{filePath}"
       onChange {event: evt, file: filePath}
   watch: (filePaths, onChange) ->
     fileMap = _.foldl filePaths, @mapHelper, {}
