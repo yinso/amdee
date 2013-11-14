@@ -4,12 +4,14 @@
 
 Amdee is a command-line tool for converting Node style packages into client-side scripts that cooperates with (requireJS)[http://www.requirejs.org].
 
-The difference between Amdee and other systems like Browserify is
-that Amdee does not compile everything into a single script; it
-compiles only the files within the current node module into a single
-script, and expects requireJS to serve the external modules.
+Amdee by default works with the boundary of the package; i.e. each package is converted into its own AMD script.
 
-Amdee also provides many (but not all) core modules from Node for the client-side as well.
+This approach has the following advantage
+
+* Respect the scope of the package - no need to worry about conflicting names across packages
+* Leveraging CDN for popular reusable packages - for scripts such as jQuery or Underscore, you will not end up including them in your script
+
+Amdee by default provides many NodeJS module shims for client-side as well.
 
 Amdee will convert a script, along with its relative dependencies within a package, into a single javascript file.  All of the relative dependencies will be resolved to pure javascript variable, i.e., 
 
@@ -78,7 +80,6 @@ In Node program (below is written in coffee-script with expressjs)
       amdee.run
         source: './client/main.coffee'
         target: './public/js/main.js'
-        watch: true
         requirejs: # add requireJS's config here; will be written to main.js
           paths:
             jquery: 'https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min'
@@ -90,8 +91,6 @@ In Node program (below is written in coffee-script with expressjs)
               exports: 'jQuery'
             'jquery.livequery': ['jquery']
             'jquery.address': ['jquery']
-
-The `watch: true` setting will ensure that if main.coffee & its relative dependencies are changed, `main.js` will be recompiled.
 
 Ensure your main.coffee to include the needed dependencies the usual way.
 
