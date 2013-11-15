@@ -2,15 +2,8 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="512f5fa1-c586-4a9c-a1e7-f23307a4477e" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/README.md" afterPath="$PROJECT_DIR$/README.md" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/bin/amdee" afterPath="$PROJECT_DIR$/bin/amdee" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/builtin.coffee" afterPath="$PROJECT_DIR$/src/builtin.coffee" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/main.coffee" afterPath="$PROJECT_DIR$/src/main.coffee" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/package.bean" afterPath="$PROJECT_DIR$/package.bean" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/package.coffee" afterPath="$PROJECT_DIR$/src/package.coffee" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/test/package.coffee" afterPath="$PROJECT_DIR$/test/package.coffee" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/resolve.coffee" afterPath="$PROJECT_DIR$/src/resolve.coffee" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
     </list>
     <ignored path="amdee.iws" />
     <ignored path=".idea/workspace.xml" />
@@ -42,10 +35,10 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="package.coffee" pinned="false" current="false" current-in-tab="false">
+      <file leaf-file-name="package.coffee" pinned="false" current="true" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/package.coffee">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="75" column="0" selection-start="1988" selection-end="1988" vertical-scroll-proportion="0.0" vertical-offset="895" max-vertical-offset="6885">
+            <state line="444" column="0" selection-start="13731" selection-end="13731" vertical-scroll-proportion="0.53608245" vertical-offset="6400" max-vertical-offset="6885">
               <folding />
             </state>
           </provider>
@@ -63,10 +56,10 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="package.bean" pinned="false" current="true" current-in-tab="true">
+      <file leaf-file-name="package.bean" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/package.bean">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="28" column="0" selection-start="612" selection-end="612" vertical-scroll-proportion="0.814433" vertical-offset="25" max-vertical-offset="510">
+            <state line="28" column="0" selection-start="612" selection-end="612" vertical-scroll-proportion="0.0" vertical-offset="25" max-vertical-offset="510">
               <folding />
             </state>
           </provider>
@@ -93,7 +86,7 @@
       <file leaf-file-name="resolve.coffee" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/resolve.coffee">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="37" column="16" selection-start="993" selection-end="993" vertical-scroll-proportion="0.0" vertical-offset="630" max-vertical-offset="1695">
+            <state line="37" column="0" selection-start="977" selection-end="977" vertical-scroll-proportion="0.0" vertical-offset="150" max-vertical-offset="1710">
               <folding />
             </state>
           </provider>
@@ -125,14 +118,14 @@
         <option value="$PROJECT_DIR$/example/package.bean" />
         <option value="$PROJECT_DIR$/example/output.js" />
         <option value="$PROJECT_DIR$/test/main.coffee" />
-        <option value="$PROJECT_DIR$/src/resolve.coffee" />
         <option value="$PROJECT_DIR$/test/package.coffee" />
         <option value="$PROJECT_DIR$/src/builtin.coffee" />
         <option value="$PROJECT_DIR$/bin/amdee" />
         <option value="$PROJECT_DIR$/src/main.coffee" />
-        <option value="$PROJECT_DIR$/src/package.coffee" />
         <option value="$PROJECT_DIR$/README.md" />
         <option value="$PROJECT_DIR$/package.bean" />
+        <option value="$PROJECT_DIR$/src/resolve.coffee" />
+        <option value="$PROJECT_DIR$/src/package.coffee" />
       </list>
     </option>
   </component>
@@ -394,13 +387,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/resolve.coffee">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="37" column="16" selection-start="993" selection-end="993" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="1695">
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/src/builtin.coffee">
       <provider selected="true" editor-type-id="text-editor">
         <state line="26" column="0" selection-start="514" selection-end="514" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="600">
@@ -408,23 +394,9 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/main.coffee">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="15" column="0" selection-start="517" selection-end="517" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="720">
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/bin/amdee">
       <provider selected="true" editor-type-id="text-editor">
         <state line="10" column="0" selection-start="349" selection-end="349" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="315">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/package.coffee">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="75" column="0" selection-start="1988" selection-end="1988" vertical-scroll-proportion="0.0" vertical-offset="895" max-vertical-offset="6885">
           <folding />
         </state>
       </provider>
@@ -441,7 +413,28 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/package.bean">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="28" column="0" selection-start="612" selection-end="612" vertical-scroll-proportion="0.814433" vertical-offset="25" max-vertical-offset="510">
+        <state line="28" column="0" selection-start="612" selection-end="612" vertical-scroll-proportion="0.0" vertical-offset="25" max-vertical-offset="510">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main.coffee">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="15" column="0" selection-start="517" selection-end="517" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="720">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/resolve.coffee">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="37" column="0" selection-start="977" selection-end="977" vertical-scroll-proportion="0.0" vertical-offset="150" max-vertical-offset="1710">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/package.coffee">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="444" column="0" selection-start="13731" selection-end="13731" vertical-scroll-proportion="0.53608245" vertical-offset="6400" max-vertical-offset="6885">
           <folding />
         </state>
       </provider>

@@ -35,7 +35,8 @@ externalModuleRoot = (module, filePath, cb) ->
       modulePath = path.join rootPath, 'node_modules', module
       fs.stat modulePath, (err, stat) ->
         if err
-          cb err
+          externalModuleRoot module, path.dirname(rootPath), cb
+          #cb err
         else
           cb null, modulePath
 

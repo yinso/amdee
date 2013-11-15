@@ -442,7 +442,7 @@ define([#{externals}], function(#{baseDepends}) {
           cb err
         else
           targetPath = path.join path.dirname(@targetPath), "#{spec}.js"
-          PackageMap.loadPackage modulePath, targetPath, @toWatch (err, module) ->
+          PackageMap.loadPackage modulePath, targetPath, @toWatch, (err, module) ->
             if err
               cb err
             else
