@@ -2,7 +2,7 @@
 
 ## Overview
 
-Amdee is a command-line tool for converting Node style packages into client-side scripts that cooperates with (requireJS)[http://www.requirejs.org].
+Amdee is a command-line tool for converting Node style packages into client-side scripts that cooperates with [requireJS](http://www.requirejs.org).
 
 Amdee by default works with the boundary of the package; i.e. each package is converted into its own AMD script.
 

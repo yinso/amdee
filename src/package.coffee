@@ -29,37 +29,37 @@ _ = require 'underscore'
 {EventEmitter} = require 'events'
 
 
-###
-fs = require 'fs'
-_ = require 'underscore'
-
-class Watcher
-  constructor: () ->
-    @inner = {}
-  mapHelper: (interim, file) ->
-    interim[file] = file
-    interim
-  watchHelper: (filePath, onChange) ->
-    console.log "[watch:add] #{filePath}"
-    @inner[filePath] = fs.watch filePath, (evt, fileName) =>
-      console.log "[watch:#{evt}] #{filePath}"
-      onChange {event: evt, file: filePath}
-  watch: (filePaths, onChange) ->
-    fileMap = _.foldl filePaths, @mapHelper, {}
-    @removeWatchByMap fileMap
-    for filePath in filePaths
-      if not @inner[filePath]
-        @watchHelper filePath, onChange
-  removeWatchByMap: (fileMap) ->
-    for file, watcher of @inner
-      if not fileMap[file]
-        watcher.close()
-        delete @inner[file]
-
-module.exports = Watcher
-
-# a script *is* always a
-###
+class FilePathWatcher extends EventEmitter
+  constructor: (@filePath, @dirPath = path.dirname(@filePath)) ->
+  on: (event, eventListener) ->
+    super event, eventListener
+    if not @dir
+      @dir = fs.watch @dirPath, @onDirChange
+      @refresh()
+  refresh: (stat = null) ->
+    if stat
+      @stat = stat
+    else
+      fs.stat @filePath, (err, stat) =>
+        if err
+          @emit 'change', {type: 'delete', path: @filePath}
+        else
+          @stat = stat
+          console.log 'Watch.file', @filePath, @stat.ino, @stat.size
+  onDirChange: (evt, fileName) =>
+    if evt == 'rename' # test to see if we end up with a different inode object
+      fs.stat @filePath, (err, stat) =>
+        if err
+          @emit 'change', {type: 'delete', path: @filePath}
+        else
+          if @statDiffer @stat, stat
+            @refresh stat
+            @emit 'change', {type: 'change', path: @filePath}
+  statDiffer: (oldStat, newStat) ->
+    oldStat.ino != newStat.ino or oldStat.size != newStat.size
+  close: () ->
+    @removeAllListeners()
+    @dir.close()
 
 class Script extends EventEmitter
   constructor: (@filePath, @data, @depends, @toWatch, @map) ->
@@ -69,22 +69,16 @@ class Script extends EventEmitter
   destroy: () ->
     @stopWatch()
   startWatch: () ->
-    @watcher = fs.watch path.join(@map.basePath, @filePath), @onWatch
+    @watcher = new FilePathWatcher path.join(@map.basePath, @filePath)
+    @watcher.on 'change', @onWatch
   stopWatch: () ->
     if @watcher
       @watcher.close()
-  onWatch: (evt, fileName) =>
-    helper = () =>
-      @stopWatch()
-      @startWatch()
-    if evt == 'change'
+  onWatch: ({type, path}) =>
+    if type == 'change'
       process.nextTick () =>
-        console.log '------ CHANGE ------', @filePath
+        console.log '------ CHANGE ------', path
         @emit 'fileChange', @
-        # restart watch to prevent IDEs (such as Webstorm) using fancy methods to overwrite files that ends up
-        # destroying the file handle monitored by file watcher.
-        @stopWatch()
-        @startWatch()
   reload: (@data, @depends) ->
   scriptName: (name = @name) ->
     "___" + name.toUpperCase().split('/').join('_') + "___"
