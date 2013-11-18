@@ -7,6 +7,9 @@ version: '0.5.4'
 perferGlobal: true
 bin:
   amdee: "./bin/amdee"
+repository:
+  type: 'git'
+  url: 'git://github.com/yinso/amdee.git'
 scripts:
   test: 'make test'
   install: 'make'

@@ -1,90 +1,6 @@
 
-define(['require','builtin','underscore','async','coffee-script'], function(require) {
+define(['require','builtin','coffee-script','underscore'], function(require) {
 
-// lib/async
-var ___LIB_ASYNC___ = (function(module) {
-  
-(function() {
-  var first, fold, forEach;
-
-  fold = function(ary, iterator, initial, callback) {
-    var helper;
-    helper = function(ary2, result) {
-      var val;
-      console.log({
-        forEach: ary2,
-        interim: result
-      });
-      if (ary2.length === 0) {
-        return callback(null, result);
-      } else {
-        val = ary2.shift();
-        return iterator(val, result, function(err, result) {
-          if (err) {
-            return callback(err);
-          } else {
-            return helper(ary2, result);
-          }
-        });
-      }
-    };
-    return helper(ary, initial);
-  };
-
-  forEach = function(ary, iterator, callback) {
-    var helper;
-    helper = function(ary2, result) {
-      var val;
-      if (ary2.length === 0) {
-        return callback(null);
-      } else {
-        val = ary2.shift();
-        return iterator(val, function(err, result) {
-          if (err) {
-            return callback(err);
-          } else {
-            return helper(ary2, result);
-          }
-        });
-      }
-    };
-    return helper(ary, null);
-  };
-
-  first = function(ary, iterator, callback) {
-    var helper;
-    helper = function(ary2, interim) {
-      var val;
-      if (ary2.length === 0) {
-        return callback(null, interim);
-      } else {
-        val = ary2.shift();
-        return iterator(val, function(err, result) {
-          if (err) {
-            return callback(err);
-          } else {
-            if (result) {
-              return callback(err, result);
-            } else {
-              return helper(ary2, interim);
-            }
-          }
-        });
-      }
-    };
-    return helper(ary, null);
-  };
-
-  module.exports = {
-    fold: fold,
-    forEach: forEach,
-    first: first
-  };
-
-}).call(this);
-
-  return module.exports;
-})({exports: {}});
 // lib/nocomment
 var ___LIB_NOCOMMENT___ = (function(module) {
   module.exports = (function(){
@@ -1266,6 +1182,7 @@ var ___LIB_BUILTIN___ = (function(module) {
     readline: false,
     stream: false,
     string_decoder: false,
+    module: false,
     tls: false,
     udp: false,
     url: true,
@@ -1299,7 +1216,7 @@ var ___LIB_RESOLVE___ = (function(module) {
   builtins = ___LIB_BUILTIN___;
 
   isRelative = function(module) {
-    return module.indexOf('.') === 0;
+    return module.indexOf('.') === 0 || module.indexOf('/') === 0;
   };
 
   relativeRoot = function(filePath, cb) {
@@ -1325,17 +1242,28 @@ var ___LIB_RESOLVE___ = (function(module) {
   };
 
   externalModuleRoot = function(module, filePath, cb) {
+    console.log('externalModuleRoot', module, filePath);
     return relativeRoot(filePath, function(err, rootPath) {
-      var modulePath;
+      console.log('relativeRoot', rootPath);
       if (err) {
         return cb(err);
       } else {
-        modulePath = path.join(rootPath, 'node_modules', module);
-        return fs.stat(modulePath, function(err, stat) {
+        return readPackageJSON(rootPath, function(err, json) {
+          var modulePath;
+          console.log('packageJSON', err, json);
           if (err) {
             return cb(err);
+          } else if (json.name === module) {
+            return cb(null, rootPath);
           } else {
-            return cb(null, modulePath);
+            modulePath = path.join(rootPath, 'node_modules', module);
+            return fs.stat(modulePath, function(err, stat) {
+              if (err) {
+                return externalModuleRoot(module, path.dirname(rootPath), cb);
+              } else {
+                return cb(null, modulePath);
+              }
+            });
           }
         });
       }
@@ -1435,340 +1363,591 @@ var ___LIB_RESOLVE___ = (function(module) {
 
   return module.exports;
 })({exports: {}});
-// lib/parser
-var ___LIB_PARSER___ = (function(module) {
+// lib/package
+var ___LIB_PACKAGE___ = (function(module) {
   
-(function() {
-  var EventEmitter, ParsedScript, ScriptMap, ScriptSpec, async, coffee, extensions, fs, noComment, normalizePath, path, resolve, scriptName, _,
-    __hasProp = {}.hasOwnProperty,
-    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    __slice = [].slice;
 
-  EventEmitter = require('builtin').events.EventEmitter;
+
+
+
+(function() {
+  var EventEmitter, FilePathWatcher, PackageMap, Script, coffeeScript, fs, parser, path, resolve, _,
+    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
+    __hasProp = {}.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
   fs = require('builtin').fs;
 
   path = require('builtin').path;
 
-  noComment = ___LIB_NOCOMMENT___;
-
-  coffee = require('coffee-script');
+  parser = ___LIB_NOCOMMENT___;
 
   resolve = ___LIB_RESOLVE___;
 
+  coffeeScript = require('coffee-script');
+
   _ = require('underscore');
 
-  async = ___LIB_ASYNC___;
+  EventEmitter = require('builtin').events.EventEmitter;
 
-  scriptName = function(filePath) {
-    return path.join(path.dirname(filePath), path.basename(filePath, path.extname(filePath))).replace(/[\-\\\/\.]+/g, '_');
-  };
+  FilePathWatcher = (function(_super) {
 
-  
+    __extends(FilePathWatcher, _super);
 
+    function FilePathWatcher(filePath, dirPath) {
+      this.filePath = filePath;
+      this.dirPath = dirPath != null ? dirPath : path.dirname(this.filePath);
+      this.onDirChange = __bind(this.onDirChange, this);
 
-  ScriptSpec = (function() {
-
-    function ScriptSpec(rspec, basePath, rootPath) {
-      if (rootPath == null) {
-        rootPath = process.cwd();
-      }
-      this.relative = this.isRelative(rspec) || false;
-      this.isExternal = !this.relative;
-      this.rspec = rspec;
-      this.basePath = basePath;
-      this.rootPath = rootPath;
-      this.core = resolve.isCore(rspec) || false;
-      if (this.core && (!resolve.isCoreSupported(rspec))) {
-        throw new Error("unsupported_builtin_module: '" + rspec + "'");
-      }
-      if (this.isExternal) {
-        this.name = this.rspec;
-        this.fullPath = this.rspec;
-      } else {
-        this.name = path.relative(this.rootPath, path.resolve(this.basePath, this.rspec));
-      }
     }
 
-    ScriptSpec.prototype.resolve = function(cb) {
+    FilePathWatcher.prototype.on = function(event, eventListener) {
+      FilePathWatcher.__super__.on.call(this, event, eventListener);
+      if (!this.dir) {
+        this.dir = fs.watch(this.dirPath, this.onDirChange);
+        return this.refresh();
+      }
+    };
+
+    FilePathWatcher.prototype.refresh = function(stat) {
       var _this = this;
-      if (!this.relative) {
-        return cb(null, this.rspec);
+      if (stat == null) {
+        stat = null;
+      }
+      if (stat) {
+        return this.stat = stat;
       } else {
-        return resolve.resolve(this.rspec, {
-          dir: this.basePath,
-          extensions: ['.coffee', '.js']
-        }, function(err, fullPath) {
+        return fs.stat(this.filePath, function(err, stat) {
           if (err) {
-            return cb(err);
+            return _this.emit('change', {
+              type: 'delete',
+              path: _this.filePath
+            });
           } else {
-            _this.fullPath = fullPath;
-            return cb(null, _this.fullPath);
+            _this.stat = stat;
+            return console.log('Watch.file', _this.filePath, _this.stat.ino, _this.stat.size);
           }
         });
       }
     };
 
-    ScriptSpec.prototype.isRelative = function(rspec) {
-      return (rspec.match(/^\.\.?\//) !== null) || false;
-    };
-
-    ScriptSpec.prototype.serializeRequire = function() {
-      if (this.core) {
-        return "require('builtin')." + this.rspec;
-      } else if (!this.relative) {
-        return "require('" + this.rspec + "')";
-      } else {
-        return "" + (scriptName(this.name));
+    FilePathWatcher.prototype.onDirChange = function(evt, fileName) {
+      var _this = this;
+      if (evt === 'rename') {
+        return fs.stat(this.filePath, function(err, stat) {
+          if (err) {
+            return _this.emit('change', {
+              type: 'delete',
+              path: _this.filePath
+            });
+          } else {
+            if (_this.statDiffer(_this.stat, stat)) {
+              _this.refresh(stat);
+              return _this.emit('change', {
+                type: 'change',
+                path: _this.filePath
+              });
+            }
+          }
+        });
       }
     };
 
-    return ScriptSpec;
+    FilePathWatcher.prototype.statDiffer = function(oldStat, newStat) {
+      return oldStat.ino !== newStat.ino || oldStat.size !== newStat.size;
+    };
 
-  })();
+    FilePathWatcher.prototype.close = function() {
+      this.removeAllListeners();
+      return this.dir.close();
+    };
 
-  ParsedScript = (function(_super) {
+    return FilePathWatcher;
 
-    __extends(ParsedScript, _super);
+  })(EventEmitter);
 
-    function ParsedScript() {
-      var args;
-      args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-      ParsedScript.__super__.constructor.apply(this, args);
-      this.output = [];
-      this.depends = [];
+  Script = (function(_super) {
+
+    __extends(Script, _super);
+
+    function Script(filePath, data, depends, toWatch, map) {
+      this.filePath = filePath;
+      this.data = data;
+      this.depends = depends;
+      this.toWatch = toWatch;
+      this.map = map;
+      this.onWatch = __bind(this.onWatch, this);
+
+      this.name = path.join(path.dirname(this.filePath), path.basename(this.filePath, path.extname(this.filePath)));
+      if (this.toWatch) {
+        this.startWatch();
+      }
     }
 
-    ParsedScript.prototype.resolveParse = function(moduleMap, cb) {
-      var _this = this;
-      return this.resolve(function(err, fullPath) {
-        if (err) {
-          return cb(err);
-        } else {
-          return _this.parse(moduleMap, cb);
-        }
-      });
+    Script.prototype.destroy = function() {
+      return this.stopWatch();
     };
 
-    ParsedScript.prototype.parse = function(moduleMap, cb) {
-      var filePath,
-        _this = this;
-      filePath = path.resolve(this.fullPath);
-      return fs.readFile(filePath, function(err, data) {
-        if (err) {
-          return cb(err);
-        } else {
-          try {
-            _this.parseData(filePath, data.toString(), moduleMap);
-            return _this.parseDependencies(moduleMap, cb);
-          } catch (e) {
-            return cb({
-              error: e,
-              file: _this.fullPath
-            });
-          }
-        }
-      });
+    Script.prototype.startWatch = function() {
+      this.watcher = new FilePathWatcher(path.join(this.map.basePath, this.filePath));
+      return this.watcher.on('change', this.onWatch);
     };
 
-    ParsedScript.prototype.parseDependencies = function(moduleMap, cb) {
-      var resolveDepend,
+    Script.prototype.stopWatch = function() {
+      if (this.watcher) {
+        return this.watcher.close();
+      }
+    };
+
+    Script.prototype.onWatch = function(_arg) {
+      var path, type,
         _this = this;
-      resolveDepend = function(depend, next) {
-        if (moduleMap.hasScriptByScript(depend)) {
-          return next(null, depend);
-        } else if (depend.isExternal) {
-          try {
-            moduleMap.addScript(depend);
-            return next(null, depend);
-          } catch (e) {
-            return next(e);
-          }
-        } else {
-          return depend.resolve(function(err, fullPath) {
-            if (err) {
-              return next(err, depend);
+      type = _arg.type, path = _arg.path;
+      if (type === 'change') {
+        return process.nextTick(function() {
+          console.log('------ CHANGE ------', path);
+          return _this.emit('fileChange', _this);
+        });
+      }
+    };
+
+    Script.prototype.reload = function(data, depends) {
+      this.data = data;
+      this.depends = depends;
+    };
+
+    Script.prototype.scriptName = function(name) {
+      if (name == null) {
+        name = this.name;
+      }
+      return "___" + name.toUpperCase().split('/').join('_').split('.').join('_').split('-').join('_') + "___";
+    };
+
+    Script.prototype.serialize = function() {
+      var buffer, item, _i, _len, _ref;
+      buffer = [];
+      _ref = this.data;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        item = _ref[_i];
+        if (typeof item === 'string') {
+          buffer.push(item);
+        } else if (item.require) {
+          if (item.external) {
+            if (item.core) {
+              buffer.push("require('builtin')." + item.require);
             } else {
-              try {
-                return depend.parse(moduleMap, function(err, result) {
-                  moduleMap.addScript(depend);
-                  return next(err, result);
-                });
-              } catch (e) {
-                console.log({
-                  error: e
-                });
-                return next(e, depend);
-              }
+              buffer.push("require('" + item.require + "')");
+            }
+          } else {
+            buffer.push(this.scriptName(item.require));
+          }
+        }
+      }
+      return "// " + this.name + "\nvar " + (this.scriptName(this.name)) + " = (function(module) {\n  " + (buffer.join('')) + "\n  return module.exports;\n})({exports: {}});\n";
+    };
+
+    return Script;
+
+  })(EventEmitter);
+
+  PackageMap = (function(_super) {
+
+    __extends(PackageMap, _super);
+
+    PackageMap.loadPackage = function(filePath, targetPath, toWatch, config, cb) {
+      var requireJS,
+        _this = this;
+      if (arguments.length === 4) {
+        cb = arguments[3];
+        config = null;
+      }
+      requireJS = (config != null ? config.requireJS : void 0) || null;
+      return resolve.resolveModulePath(filePath, function(err, basePath) {
+        var map;
+        if (err) {
+          return cb(err);
+        } else {
+          map = new _this(basePath, toWatch);
+          console.log('loadPackage', filePath, targetPath);
+          return map.initialize(filePath, targetPath, function(err, res) {
+            if (requireJS) {
+              map.requireJS = requireJS;
+            }
+            console.log("******* PROCESS *******", map.name);
+            console.log("base Path = ", map.basePath);
+            console.log("main script = ", map.mainPath);
+            console.log("skipped modules", map.skipped);
+            console.log("requireJS config? ", !map.requireJS ? 'none' : JSON.stringify(map.requireJS, null, 2));
+            console.log("");
+            console.log("Process files...");
+            console.log("");
+            if (err) {
+              return cb(err);
+            } else {
+              return map.loadScripts(cb);
             }
           });
         }
+      });
+    };
+
+    PackageMap.loadAndSavePackage = function(filePath, targetPath, toWatch, cb) {
+      return this.loadPackage(filePath, targetPath, toWatch, function(err, map) {
+        if (err) {
+          return cb(err);
+        } else {
+          return map.savePackage(function(err, actualPath) {
+            if (err) {
+              return cb(err);
+            } else {
+              return cb(null, map, actualPath);
+            }
+          });
+        }
+      });
+    };
+
+    PackageMap.loadAndSavePackageRecursive = function(filePath, targetPath, toWatch, cb) {
+      var iterHelper,
+        _this = this;
+      iterHelper = function(module, next) {
+        return module.savePackage(function(err, res) {
+          if (err) {
+            return cb(err);
+          } else {
+            console.log("saved to ", res);
+            console.log('');
+            return module.loadExternalPackages(iterHelper, function(err, module) {
+              if (err) {
+                return cb(err);
+              } else {
+                return next(null, module);
+              }
+            });
+          }
+        });
       };
-      return async.forEach(this.depends, resolveDepend, cb);
+      return this.loadAndSavePackage(filePath, targetPath, toWatch, function(err, map) {
+        if (err) {
+          return cb(err);
+        } else {
+          return map.loadExternalPackages(iterHelper, cb);
+        }
+      });
     };
 
-    ParsedScript.prototype.parseData = function(filePath, data, moduleMap) {
-      data = path.extname(filePath) === '.coffee' ? coffee.compile(data) : data;
-      return this.formatParsed(noComment.parse(data), moduleMap);
+    function PackageMap(basePath, toWatch) {
+      this.basePath = basePath;
+      this.toWatch = toWatch != null ? toWatch : false;
+      this.reload = __bind(this.reload, this);
+
+      this.name = path.basename(this.basePath);
+      this.scripts = {};
+      this.depends = [];
+      this.externals = [];
+      this.loadedModules = {};
+    }
+
+    PackageMap.prototype.initialize = function(filePath, targetPath, cb) {
+      var _this = this;
+      return this.normalizeTargetPath(targetPath, function(err, res) {
+        if (err) {
+          return cb(err);
+        }
+        return resolve.readPackageJSON(_this.basePath, function(err, res) {
+          var _ref, _ref1, _ref2, _ref3;
+          if (err) {
+            return cb(err);
+          } else {
+            if (((_ref = res.amdee) != null ? _ref.main : void 0) || res.main) {
+              _this.mainPath = path.relative(_this.basePath, path.join(_this.basePath, ((_ref1 = res.amdee) != null ? _ref1.main : void 0) || res.main));
+            }
+            _this.skipped = ((_ref2 = res.amdee) != null ? _ref2.skip : void 0) || [];
+            _this.requireJS = ((_ref3 = res.amdee) != null ? _ref3.requireJS : void 0) || null;
+            return fs.stat(filePath, function(err, res) {
+              if (err) {
+                return cb(err);
+              } else if (res.isDirectory()) {
+                if (!_this.mainPath) {
+                  return cb(new Error("package.json missing amdee.main and main; file is a directory"));
+                } else {
+                  return cb(null);
+                }
+              } else {
+                _this.mainPath = path.relative(_this.basePath, filePath);
+                return cb(null);
+              }
+            });
+          }
+        });
+      });
     };
 
-    ParsedScript.prototype.formatParsed = function(parsed, moduleMap) {
-      var obj, temp, _i, _len;
+    PackageMap.prototype.loadScripts = function(cb) {
+      var nextHelper,
+        _this = this;
+      nextHelper = function(spec) {
+        if (spec) {
+          console.log("load required script:", spec, "...");
+          return _this.loadScriptBySpec(spec, function(err, res) {
+            if (err) {
+              return cb(err);
+            } else {
+              return nextHelper(_this.hasUnprocessedSpec());
+            }
+          });
+        } else {
+          console.log("no more relative require specs.");
+          _this.orderedScripts = _this.dependencySort();
+          return cb(null, _this);
+        }
+      };
+      console.log("load main script:", this.mainPath, "...");
+      return this.loadScript(this.mainPath, function(err, res) {
+        if (err) {
+          return cb(err);
+        } else {
+          _this.mainScript = res;
+          return nextHelper(_this.hasUnprocessedSpec());
+        }
+      });
+    };
+
+    PackageMap.prototype.hasUnprocessedSpec = function() {
+      var rspec, _i, _len, _ref;
+      _ref = this.depends;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        rspec = _ref[_i];
+        if (!this.scripts.hasOwnProperty(rspec)) {
+          return rspec;
+        }
+      }
+      return null;
+    };
+
+    PackageMap.prototype.loadScriptBySpec = function(spec, cb) {
+      var coffeePath, jsPath,
+        _this = this;
+      coffeePath = spec + ".coffee";
+      jsPath = spec + ".js";
+      return fs.stat(path.join(this.basePath, coffeePath), function(err, stat) {
+        if (err) {
+          return fs.stat(path.join(_this.basePath, jsPath), function(err, stat) {
+            if (err) {
+              return cb(err);
+            } else {
+              return _this.loadScript(jsPath, cb);
+            }
+          });
+        } else {
+          return _this.loadScript(coffeePath, cb);
+        }
+      });
+    };
+
+    PackageMap.prototype.loadScript = function(filePath, cb) {
+      var _this = this;
+      if (path.extname(filePath) === '') {
+        return this.loadScriptBySpec(filePath, cb);
+      } else {
+        return fs.readFile(path.join(this.basePath, filePath), 'utf8', function(err, data) {
+          var script;
+          if (err) {
+            return cb(err);
+          } else {
+            try {
+              script = _this.parseScript(filePath, data);
+              return cb(null, script);
+            } catch (e) {
+              return cb(e);
+            }
+          }
+        });
+      }
+    };
+
+    PackageMap.prototype.reloadScript = function(script, cb) {
+      var _this = this;
+      return fs.readFile(path.join(this.basePath, script.filePath), 'utf8', function(err, data) {
+        if (err) {
+          return cb(err);
+        } else {
+          try {
+            script = _this.parseScript(script.filePath, data, script);
+            return cb(null, script);
+          } catch (e) {
+            return cb(e);
+          }
+        }
+      });
+    };
+
+    PackageMap.prototype.parseScript = function(filePath, data, script) {
+      var depends, obj, output, parsed, temp, _i, _len;
+      if (script == null) {
+        script = null;
+      }
+      data = path.extname(filePath) === '.coffee' ? coffeeScript.compile(data) : data;
+      parsed = parser.parse(data);
       temp = [];
+      output = [];
+      depends = [];
       for (_i = 0, _len = parsed.length; _i < _len; _i++) {
         obj = parsed[_i];
         if (typeof obj === 'string') {
           temp.push(obj);
         } else {
           if (temp.length > 0) {
-            this.output.push(temp.join(''));
+            output.push(temp.join(''));
             temp = [];
           }
           if (obj.require) {
-            this.addDependency(obj.require, moduleMap);
+            output.push(this.addDependency(obj.require, filePath, depends));
           }
         }
       }
       if (temp.length > 0) {
-        return this.output.push(temp.join(''));
+        output.push(temp.join(''));
       }
-    };
-
-    ParsedScript.prototype.addDependency = function(rspec, moduleMap) {
-      var depend;
-      depend = moduleMap.hasScriptByRSpec(rspec, path.dirname(this.fullPath));
-      if (!depend) {
-        depend = new ParsedScript(rspec, path.dirname(this.fullPath));
-      }
-      this.output.push(depend);
-      return this.depends.push(depend);
-    };
-
-    ParsedScript.prototype.serialize = function() {
-      var item, output;
-      output = (function() {
-        var _i, _len, _ref, _results;
-        _ref = this.output;
-        _results = [];
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          item = _ref[_i];
-          if (item instanceof ScriptSpec) {
-            _results.push(item.serializeRequire());
-          } else {
-            _results.push(item);
-          }
-        }
-        return _results;
-      }).call(this);
-      return "\n// " + this.fullPath + "\nvar " + (scriptName(this.name)) + " = (function(module) {\n  " + (output.join('')) + "\n  return module.exports;\n})({exports: {}});\n";
-    };
-
-    return ParsedScript;
-
-  })(ScriptSpec);
-
-  ScriptMap = (function() {
-
-    function ScriptMap(options) {
-      var requirejs, rootPath;
-      if (options == null) {
-        options = {};
-      }
-      rootPath = options.rootPath, requirejs = options.requirejs;
-      this.scripts = {};
-      this.ordered = [];
-      this.externals = {};
-      this.rootPath = rootPath || process.cwd();
-      this.requirejs = requirejs;
-    }
-
-    ScriptMap.prototype.resolveRSpec = function(rspec, filePath) {
-      return path.relative(this.rootPath, path.resolve(path.dirname(filePath), rspec));
-    };
-
-    ScriptMap.prototype.isRelative = function(rspec) {
-      return (rspec.match(/^\.\.?\//) !== null) || false;
-    };
-
-    ScriptMap.prototype.hasScriptByRSpec = function(rspec, filePath) {
-      if (this.isRelative(rspec)) {
-        return this.hasScriptByName(this.resolveRSpec(rspec, filePath));
+      if (script) {
+        script.reload(output, depends);
+        return script;
       } else {
-        return this.externals[rspec];
+        return this.bindScript(new Script(filePath, output, depends, this.toWatch, this));
       }
     };
 
-    ScriptMap.prototype.scriptPath = function(fullPath) {
-      return path.join(path.dirname(fullPath), path.basename(fullPath, path.extname(fullPath)));
+    PackageMap.prototype.bindScript = function(script) {
+      this.scripts[script.name] = script;
+      script.on('fileChange', this.reload);
+      return script;
     };
 
-    ScriptMap.prototype.hasScriptByName = function(name) {
-      return this.script[name];
-    };
-
-    ScriptMap.prototype.hasScriptByScript = function(script) {
-      return this.scripts[script.name];
-    };
-
-    ScriptMap.prototype.addScript = function(script) {
-      if (!this.hasScriptByScript(script)) {
-        this.scripts[script.name] = script;
-      }
-      if (script.relative) {
-        return this.ordered.push(script);
-      } else {
-        return this.externals[script.name] = script;
-      }
-    };
-
-    ScriptMap.prototype.parse = function(filePath, cb) {
-      var basePath, relPath,
+    PackageMap.prototype.reload = function(script) {
+      var cb, nextHelper,
         _this = this;
-      basePath = process.cwd();
-      relPath = path.relative(basePath, filePath);
-      this.script = new ParsedScript("./" + relPath, basePath);
-      return this.script.resolveParse(this, function(err, result) {
+      cb = function(err, res) {
         if (err) {
-          return cb(err);
+          return _this.emit('reloadError', err);
         } else {
-          _this.addScript(_this.script);
-          return cb(null, result);
+          return _this.savePackage(function(err, res) {
+            if (err) {
+              return _this.emit('reloadSaveError', err);
+            } else {
+              console.log("Reload Successful.");
+              return _this.emit('reloadSaveSuccess');
+            }
+          });
+        }
+      };
+      nextHelper = function(spec) {
+        if (spec) {
+          console.log("load required script:", spec, "...");
+          return _this.loadScriptBySpec(spec, function(err, res) {
+            if (err) {
+              return cb(err);
+            } else {
+              return nextHelper(_this.hasUnprocessedSpec());
+            }
+          });
+        } else {
+          console.log("no more relative require specs.");
+          _this.orderedScripts = _this.dependencySort();
+          return cb(null, _this);
+        }
+      };
+      console.log("RELOAD", script.filePath, "...");
+      return this.reloadScript(script, function(err, script) {
+        if (err) {
+          return _this.emit('error', err);
+        } else {
+          return nextHelper(_this.hasUnprocessedSpec());
         }
       });
     };
 
-    ScriptMap.prototype.serializeRequireJS = function() {
-      if (this.requirejs) {
-        return "require.config(" + (JSON.stringify(this.requirejs)) + ");";
+    PackageMap.prototype.addDependency = function(rspec, filePath, depends) {
+      var isCore, normalized;
+      if (resolve.isRelative(rspec)) {
+        normalized = resolve.normalize(rspec, filePath, this.basePath);
+        if (!_.contains(this.depends, normalized)) {
+          this.depends.push(normalized);
+        }
+        if (!_.contains(depends, normalized)) {
+          depends.push(normalized);
+        }
+        return {
+          require: normalized,
+          relative: true
+        };
       } else {
-        return '';
+        isCore = resolve.isCore(rspec);
+        if (isCore && !_.contains(this.externals, 'builtin')) {
+          this.externals.push('builtin');
+        } else if (!isCore && !_.contains(this.externals, rspec)) {
+          this.externals.push(rspec);
+        }
+        return {
+          require: rspec,
+          external: true,
+          core: isCore
+        };
       }
     };
 
-    ScriptMap.prototype.getExternalModules = function() {
-      var hasBuiltin, key, result, script, _ref;
+    PackageMap.prototype.dependencySort = function() {
+      var helper, map;
+      map = this;
+      helper = function(script, order) {
+        var depend, _i, _len, _ref;
+        _ref = script.depends;
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          depend = _ref[_i];
+          if (!map.scripts.hasOwnProperty(depend)) {
+            throw new Error("invalid_dependency: " + depend);
+          }
+          helper(map.scripts[depend], order);
+        }
+        if (!_.contains(order, script)) {
+          order.push(script);
+        }
+        return order;
+      };
+      return helper(this.mainScript, []);
+    };
+
+    PackageMap.prototype.getExternalModules = function() {
+      var hasBuiltIn, hasBuiltin, result, script, _i, _len, _ref;
       result = [];
       hasBuiltin = false;
       _ref = this.externals;
-      for (key in _ref) {
-        script = _ref[key];
-        if (script.core) {
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        script = _ref[_i];
+        if (resolve.isCore(script)) {
           if (!hasBuiltin) {
             result.push('builtin');
-            hasBuiltin = true;
+            hasBuiltIn = true;
           }
         } else {
-          result.push(key);
+          result.push(script);
         }
       }
       return result;
     };
 
-    ScriptMap.prototype.serialize = function() {
+    PackageMap.prototype.serializeRequireJS = function() {
+      if (this.requireJS) {
+        return "require.config(" + (JSON.stringify(this.requireJS, null, 2)) + ");";
+      } else {
+        return '';
+      }
+    };
+
+    PackageMap.prototype.serialize = function() {
       var baseDepends, depends, exportName, externals, requireJS, script, scripts, val;
       scripts = ((function() {
         var _i, _len, _ref, _results;
-        _ref = this.ordered;
+        _ref = this.orderedScripts;
         _results = [];
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           script = _ref[_i];
@@ -1777,7 +1956,7 @@ var ___LIB_PARSER___ = (function(module) {
         return _results;
       }).call(this)).join('');
       baseDepends = ['require'];
-      depends = [].concat(baseDepends, this.getExternalModules());
+      depends = [].concat(baseDepends, this.externals);
       externals = (function() {
         var _i, _len, _results;
         _results = [];
@@ -1787,398 +1966,184 @@ var ___LIB_PARSER___ = (function(module) {
         }
         return _results;
       })();
-      exportName = scriptName(this.script.name);
+      exportName = this.mainScript.scriptName();
       requireJS = this.serializeRequireJS();
       return "" + requireJS + "\ndefine([" + externals + "], function(" + baseDepends + ") {\n\n" + scripts + "\n\n  return " + exportName + ";\n});\n";
     };
 
-    return ScriptMap;
-
-  })();
-
-  extensions = ['.coffee', '.js'];
-
-  normalizePath = function(filePath) {
-    var match;
-    match = filePath.match(/(\.[^\.\/\\]+)$/);
-    if (match) {
-      if (_.find(extensions, function(ext) {
-        return ext === match[0];
-      })) {
-        return path.join(path.dirname(filePath), path.basename(filePath, path.extname(filePath)));
-      } else {
-        return filePath;
-      }
-    } else {
-      return filePath;
-    }
-  };
-
-  module.exports = {
-    parseFile: function(filePath, options, cb) {
-      var normalized, parser;
-      parser = new ScriptMap(options);
-      normalized = normalizePath(filePath);
-      return parser.parse(normalized, function(err, lastScript) {
-        return cb(err, parser);
-      });
-    }
-  };
-
-}).call(this);
-
-  return module.exports;
-})({exports: {}});
-// lib/watcher
-var ___LIB_WATCHER___ = (function(module) {
-  
-(function() {
-  var Watcher, fs, _;
-
-  fs = require('builtin').fs;
-
-  _ = require('underscore');
-
-  Watcher = (function() {
-
-    function Watcher() {
-      this.inner = {};
-    }
-
-    Watcher.prototype.mapHelper = function(interim, file) {
-      interim[file] = file;
-      return interim;
-    };
-
-    Watcher.prototype.watchHelper = function(filePath, onChange) {
+    PackageMap.prototype.normalizeTargetPath = function(targetPath, cb) {
       var _this = this;
-      console.log("[watch:add] " + filePath);
-      return this.inner[filePath] = fs.watch(filePath, function(evt, fileName) {
-        console.log("[watch:" + evt + "] " + filePath);
-        return onChange({
-          event: evt,
-          file: filePath
-        });
+      console.log("normalizeTargetPath", targetPath);
+      return fs.stat(targetPath, function(err, stat) {
+        if (err) {
+          _this.targetPath = targetPath;
+        } else if (stat.isDirectory()) {
+          _this.targetPath = path.join(targetPath, path.basename(_this.name + ".js"));
+        } else if (stat.isFile()) {
+          _this.targetPath = targetPath;
+        }
+        return cb(null, _this);
       });
     };
 
-    Watcher.prototype.watch = function(filePaths, onChange) {
-      var fileMap, filePath, _i, _len, _results;
-      fileMap = _.foldl(filePaths, this.mapHelper, {});
-      this.removeWatchByMap(fileMap);
-      _results = [];
-      for (_i = 0, _len = filePaths.length; _i < _len; _i++) {
-        filePath = filePaths[_i];
-        if (!this.inner[filePath]) {
-          _results.push(this.watchHelper(filePath, onChange));
+    PackageMap.prototype.savePackage = function(cb) {
+      var _this = this;
+      return fs.writeFile(this.targetPath, this.serialize(), 'utf8', function(err) {
+        if (err) {
+          return cb(err);
         } else {
-          _results.push(void 0);
+          return cb(null, _this.targetPath);
         }
-      }
-      return _results;
+      });
     };
 
-    Watcher.prototype.removeWatchByMap = function(fileMap) {
-      var file, watcher, _ref, _results;
-      _ref = this.inner;
-      _results = [];
-      for (file in _ref) {
-        watcher = _ref[file];
-        if (!fileMap[file]) {
-          watcher.close();
-          _results.push(delete this.inner[file]);
-        } else {
-          _results.push(void 0);
+    PackageMap.prototype.haUnprocessedPackages = function() {
+      var spec, _i, _len, _ref;
+      _ref = this.externals;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        spec = _ref[_i];
+        if (!this.loadedModules.hasOwnProperty(spec)) {
+          return spec;
         }
       }
-      return _results;
+      return null;
     };
 
-    return Watcher;
+    PackageMap.prototype.loadExternalPackages = function(iterHelper, cb) {
+      var helper,
+        _this = this;
+      helper = function(spec) {
+        if (spec) {
+          if (!_.contains(_this.skipped, spec)) {
+            return _this.loadExternalPackage(spec, function(err, module) {
+              if (err) {
+                return cb(err);
+              } else {
+                return iterHelper(module, function(err, res) {
+                  if (err) {
+                    return cb(err);
+                  } else {
+                    return helper(_this.haUnprocessedPackages());
+                  }
+                });
+              }
+            });
+          } else {
+            console.log("External Module " + spec + " skipped as defined by package.json.");
+            return helper(_this.hasUnprocessedSpec());
+          }
+        } else {
+          console.log("No more unprocessed external modules.");
+          return cb(null, _this);
+        }
+      };
+      return helper(this.haUnprocessedPackages());
+    };
 
-  })();
-
-  module.exports = Watcher;
-
-}).call(this);
-
-  return module.exports;
-})({exports: {}});
-// lib/amdee
-var ___LIB_AMDEE___ = (function(module) {
-  
-
-
-
-
-(function() {
-  var Watcher, async, compile, compileAndWatch, copy, entry, fs, isDirectory, isPackage, monitor, normalizeTarget, parseFile, path, readPackageJSON, resolve, util, watcher, _;
-
-  fs = require('builtin').fs;
-
-  path = require('builtin').path;
-
-  _ = require('underscore');
-
-  async = ___LIB_ASYNC___;
-
-  util = require('builtin').util;
-
-  parseFile = ___LIB_PARSER___.parseFile;
-
-  path = require('builtin').path;
-
-  async = require('async');
-
-  Watcher = ___LIB_WATCHER___;
-
-  resolve = ___LIB_RESOLVE___;
-
-  watcher = new Watcher();
-
-  isDirectory = function(filePath) {
-    return fs.lstatSync(filePath).isDirectory();
-  };
-
-  isPackage = function(filePath) {
-    return fs.existsSync("" + filePath + "/package.json");
-  };
-
-  readPackageJSON = function(filePath) {
-    return JSON.parse(fs.readFileSync("" + filePath + "/package.json", "utf8"));
-  };
-
-  normalizeTarget = function(target, source) {
-    var sourceName;
-    console.log('normalizeTarget', target, source);
-    if (isDirectory(target)) {
-      sourceName = path.basename(source, path.extname(source)) + ".js";
-      return path.join(target, sourceName);
-    } else {
-      return target;
-    }
-  };
-
-  copy = function(src, dest, cb) {
-    return fs.stat(dest, function(err, stat) {
-      if (err) {
-        return fs.stat(src, function(err, stat) {
-          var source, target;
+    PackageMap.prototype.loadExternalPackage = function(spec, cb) {
+      var filePath, self, targetPath,
+        _this = this;
+      console.log('loadExternalPackage', spec);
+      self = this;
+      if (spec === 'builtin') {
+        filePath = path.join(__dirname, '../builtin');
+        targetPath = path.join(path.dirname(this.targetPath), 'builtin.js');
+        return PackageMap.loadPackage(filePath, targetPath, this.toWatch, function(err, module) {
           if (err) {
             return cb(err);
           } else {
-            source = fs.createReadStream(src);
-            target = fs.createWriteStream(dest);
-            return util.pump(source, target, cb);
+            self.loadedModules[spec] = module;
+            return cb(null, module);
           }
         });
       } else {
-        return cb(new Error("file_exists: " + dest));
-      }
-    });
-  };
-
-  entry = function(opts) {
-    var handleExternals, helper, nothing, obj, packageHelper, requirejs, source, target, toBeProcessed, watch;
-    source = opts.source, target = opts.target, obj = opts.obj, nothing = opts.nothing, watch = opts.watch, requirejs = opts.requirejs;
-    toBeProcessed = function(externals, amdeeSpec) {
-      var core, name, result, script, skipped;
-      result = [];
-      core = false;
-      skipped = (amdeeSpec != null ? amdeeSpec.skip : void 0) || [];
-      for (name in externals) {
-        script = externals[name];
-        if (!_.contains(skipped, script.name)) {
-          if (script.core) {
-            if (!core) {
-              core = true;
-              result.push(script);
-            }
-          } else {
-            result.push(script);
-          }
-        }
-      }
-      return result;
-    };
-    handleExternals = function(externals, amdeeSpec, targetDir) {
-      var script, scriptHelper, _i, _len, _results;
-      console.log('External Scripts', externals);
-      externals = toBeProcessed(externals, amdeeSpec);
-      console.log('External Scripts', externals);
-      scriptHelper = function(script, next) {
-        if (script.core) {
-          return helper(path.join(__dirname, '../builtin/main.coffee'), path.join(targetDir, 'builtin.js'), {
-            skipped: []
-          });
-        } else {
-          return resolve.resolve(script.name, {
-            dir: script.basePath
-          }, function(err, res) {
-            var packagePath;
-            console.log('resolvePath', script, err, res);
-            packagePath = path.join(script.rootPath, 'node_modules', script.name);
-            if (isDirectory(packagePath)) {
-              return packageHelper(packagePath, targetDir);
-            } else {
-              return console.error("NOT_A_PACKAGE", script.name);
-            }
-          });
-        }
-      };
-      _results = [];
-      for (_i = 0, _len = externals.length; _i < _len; _i++) {
-        script = externals[_i];
-        _results.push(scriptHelper(script));
-      }
-      return _results;
-    };
-    helper = function(source, target, amdeeSpec, cb) {
-      return parseFile(source, {
-        requirejs: requirejs
-      }, function(err, parsed) {
-        var files, script;
-        if (err) {
-          console.log('ERROR');
-          console.log(err);
-        } else if (target) {
-          fs.writeFile(target, parsed.serialize(), function(err) {
-            if (err) {
-              return console.log('ERROR\n', err);
-            } else {
-              console.log("Saved to " + target);
-              console.log("Process Externals...");
-              return handleExternals(parsed.externals, amdeeSpec, path.dirname(target));
-            }
-          });
-        } else if (!nothing) {
-          console.log(obj ? parsed : parsed.serialize());
-        }
-        if (watch) {
-          files = parsed.ordered.length > 0 ? (function() {
-            var _i, _len, _ref, _results;
-            _ref = parsed.ordered;
-            _results = [];
-            for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-              script = _ref[_i];
-              _results.push(script.fullPath);
-            }
-            return _results;
-          })() : [parsed.script.fullPath];
-          return watcher.watch(files, function(_arg) {
-            var event, file;
-            event = _arg.event, file = _arg.file;
-            return entry(opts);
-          });
-        }
-      });
-    };
-    packageHelper = function(source, target) {
-      var packageSpec, _ref;
-      if (isPackage(source)) {
-        packageSpec = readPackageJSON(source);
-        if (!packageSpec.main && !packageSpec.amdee) {
-          return console.error("ERROR:package.json_lack_main", source, packageSpec);
-        } else if ((_ref = packageSpec.amdee) != null ? _ref.main : void 0) {
-          source = path.join(source, packageSpec.amdee.main);
-          target = normalizeTarget(target, source);
-          return helper(source, target, packageSpec.amdee);
-        } else {
-          source = path.join(source, packageSpec.main);
-          target = normalizeTarget(target, source);
-          return helper(source, target, {
-            skip: []
-          });
-        }
-      } else {
-        return console.error("ERROR", "source_not_a_package: " + source);
-      }
-    };
-    if (isDirectory(source)) {
-      return packageHelper(source, target);
-    } else {
-      return helper(source);
-    }
-  };
-
-  compile = function(source, target, opts, cb) {
-    return parseFile(source, opts, function(err, parsed) {
-      if (err) {
-        return cb(err, null);
-      } else {
-        return fs.writeFile(target, parsed.serialize(), function(err) {
+        console.log('resolveModuleRule', spec, this.basePath);
+        return resolve.resolveModuleRoot(spec, this.basePath, function(err, modulePath) {
+          console.log('resolveModuleRule', err, modulePath);
           if (err) {
-            return cb(err, null);
+            return cb(err);
           } else {
-            return cb(null, parsed);
+            targetPath = path.join(path.dirname(_this.targetPath), "" + spec + ".js");
+            return PackageMap.loadPackage(modulePath, targetPath, _this.toWatch, function(err, module) {
+              if (err) {
+                return cb(err);
+              } else {
+                module.skipped = self.skipped;
+                self.loadedModules[spec] = module;
+                return cb(null, module);
+              }
+            });
           }
         });
       }
-    });
-  };
-
-  compileAndWatch = function(targets, opts) {
-    var helper, source, target, watchHelper, _i, _len, _ref, _results;
-    watchHelper = function(source, target, watcher, parsed) {
-      var files, script;
-      files = parsed.ordered.length > 0 ? (function() {
-        var _i, _len, _ref, _results;
-        _ref = parsed.ordered;
-        _results = [];
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          script = _ref[_i];
-          _results.push(script.fullPath);
-        }
-        return _results;
-      })() : [parsed.script.fullPath];
-      return watcher.watch(files, function(_arg) {
-        var event, file;
-        event = _arg.event, file = _arg.file;
-        return helper(source, target, watcher);
-      });
     };
-    helper = function(source, target, watcher) {
-      return compile(source, target, opts, function(err, parsed) {
+
+    return PackageMap;
+
+  })(EventEmitter);
+
+  module.exports = PackageMap;
+
+}).call(this);
+
+  return module.exports;
+})({exports: {}});
+// lib/main
+var ___LIB_MAIN___ = (function(module) {
+  
+(function() {
+  var PackageMap, fs, path;
+
+  PackageMap = ___LIB_PACKAGE___;
+
+  fs = require('builtin').fs;
+
+  path = require('builtin').path;
+
+  module.exports.run = function(argv) {
+    if (!argv.recursive) {
+      return PackageMap.loadAndSavePackage(argv.source, argv.target, argv.watch, function(err, map) {
         if (err) {
-          console.error("COMPILE ERROR: " + source);
-          return console.error(err);
+          return console.error("ERROR", err);
         } else {
-          return watchHelper(source, target, watcher, parsed);
+          return console.log("" + map.name + " saved to " + map.targetPath);
         }
       });
-    };
-    _results = [];
-    for (_i = 0, _len = targets.length; _i < _len; _i++) {
-      _ref = targets[_i], source = _ref.source, target = _ref.target, watcher = _ref.watcher;
-      _results.push(helper(source, target, watcher));
+    } else {
+      return PackageMap.loadAndSavePackageRecursive(argv.source, argv.target, argv.watch, function(err, map) {
+        var requireJSPath, requireJSSource;
+        if (err) {
+          return console.error("ERROR", err);
+        } else {
+          console.log("" + map.name + " saved to " + map.targetPath);
+          requireJSPath = path.join(path.dirname(map.targetPath), "require.js");
+          requireJSSource = path.join(__dirname, "../lib/require.js");
+          return fs.stat(requireJSPath, function(err, stat) {
+            if (err) {
+              return fs.readFile(requireJSSource, 'utf8', function(err, data) {
+                if (err) {
+                  return console.error("error copying requireJS to " + requireJSPath, err);
+                } else {
+                  return fs.writeFile(requireJSPath, data, 'utf8', function(err) {
+                    if (err) {
+                      return console.error("error copying requireJS to " + requireJSPath, err);
+                    } else {
+                      return console.log("requireJS copied to " + requireJSPath + ".");
+                    }
+                  });
+                }
+              });
+            } else if (stat.isDirectory()) {
+              return console.error("" + requireJSPath + " is a directory instead of a javascript file.");
+            } else {
+              return console.log("" + requireJSPath + " exists");
+            }
+          });
+        }
+      });
     }
-    return _results;
-  };
+    
 
-  monitor = function(_arg) {
-    var files, requirejs, source, target, targets;
-    files = _arg.files, requirejs = _arg.requirejs;
-    targets = (function() {
-      var _i, _len, _ref, _results;
-      _results = [];
-      for (_i = 0, _len = files.length; _i < _len; _i++) {
-        _ref = files[_i], source = _ref.source, target = _ref.target;
-        _results.push({
-          source: source,
-          target: target,
-          watcher: new Watcher()
-        });
-      }
-      return _results;
-    })();
-    return compileAndWatch(targets, {
-      requirejs: requirejs
-    });
-  };
-
-  module.exports = {
-    run: entry,
-    monitor: monitor
   };
 
 }).call(this);
@@ -2187,5 +2152,5 @@ var ___LIB_AMDEE___ = (function(module) {
 })({exports: {}});
 
 
-  return ___LIB_AMDEE___;
+  return ___LIB_MAIN___;
 });

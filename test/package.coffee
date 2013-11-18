@@ -9,7 +9,7 @@ describe 'generate script', () ->
     sourcePath = path.join(__dirname, '../example')
     targetPath = path.join(__dirname, '../example/target.js')
     # we'll need to save it to a file now...
-    PackageMap.loadPackage sourcePath, targetPath, (err, map) ->
+    PackageMap.loadPackage sourcePath, targetPath, false, (err, map) ->
       if err
         done err
       else

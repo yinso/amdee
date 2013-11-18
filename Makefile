@@ -7,7 +7,7 @@ COFFEE_OBJECTS=$(patsubst $(VPATH)/%.coffee, $(BUILDDIR)/%.js, $(COFFEE_SOURCES)
 all: build
 
 .PHONY: build
-build: node_modules objects lib/nocomment.js
+build: node_modules objects lib/nocomment.js example/output.js
 
 lib/nocomment.js: grammar/nocomment.pegjs
 	pegjs grammar/nocomment.pegjs lib/nocomment.js
@@ -17,6 +17,9 @@ grammar: lib/nocomment.js
 
 .PHONY: objects
 objects: $(COFFEE_OBJECTS) package.json
+
+output:
+	./bin/amdee --source src/ --target example/output.js
 
 package.json: package.bean
 	./node_modules/.bin/bean

@@ -81,7 +81,7 @@ class Script extends EventEmitter
         @emit 'fileChange', @
   reload: (@data, @depends) ->
   scriptName: (name = @name) ->
-    "___" + name.toUpperCase().split('/').join('_').split('.').join('_') + "___"
+    "___" + name.toUpperCase().split('/').join('_').split('.').join('_').split('-').join('_') + "___"
   serialize: () ->
     buffer = []
     for item in @data
