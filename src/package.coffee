@@ -432,7 +432,9 @@ define([#{externals}], function(#{baseDepends}) {
           self.loadedModules[spec] = module
           cb null, module
     else
+      console.log 'resolveModuleRule', spec, @basePath
       resolve.resolveModuleRoot spec, @basePath, (err, modulePath) =>
+        console.log 'resolveModuleRule', err, modulePath
         if err
           cb err
         else

@@ -27,18 +27,28 @@ relativeRoot = (filePath, cb) ->
       packageHelper filePath
 
 externalModuleRoot = (module, filePath, cb) ->
+  console.log 'externalModuleRoot', module, filePath
   # let's first get the root of the module.
   relativeRoot filePath, (err, rootPath) ->
+    console.log 'relativeRoot', rootPath
     if err
       cb err
     else
-      modulePath = path.join rootPath, 'node_modules', module
-      fs.stat modulePath, (err, stat) ->
+      # let's see if the current package is the module in question.
+      readPackageJSON rootPath, (err, json) ->
+        console.log 'packageJSON', err, json
         if err
-          externalModuleRoot module, path.dirname(rootPath), cb
-          #cb err
+          cb err
+        else if json.name == module
+          cb null, rootPath
         else
-          cb null, modulePath
+          modulePath = path.join rootPath, 'node_modules', module
+          fs.stat modulePath, (err, stat) ->
+            if err
+              externalModuleRoot module, path.dirname(rootPath), cb
+              #cb err
+            else
+              cb null, modulePath
 
 resolveModuleRoot = (module, filePath, cb) -> # this is the filePath that talks about the module.
   if isRelative(module)
