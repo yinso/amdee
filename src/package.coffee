@@ -106,10 +106,11 @@ var #{@scriptName(@name)} = (function(module) {
 """
 
 class PackageMap extends EventEmitter
-  @loadPackage: (filePath, targetPath, toWatch, requireJS, cb) ->
+  @loadPackage: (filePath, targetPath, toWatch, config, cb) ->
     if arguments.length == 4
       cb = arguments[3]
-      requireJS = null
+      config = null
+    requireJS = config?.requireJS or null
     resolve.resolveModulePath filePath, (err, basePath) =>
       if err
         cb err

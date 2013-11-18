@@ -9,7 +9,7 @@ path = require 'path'
 builtins = require './builtin'
 
 isRelative = (module) ->
-  module.indexOf('.') == 0
+  module.indexOf('.') == 0 or module.indexOf('/') == 0
 
 relativeRoot = (filePath, cb) ->
   packageHelper = (dirPath) ->

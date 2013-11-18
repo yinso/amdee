@@ -12,7 +12,7 @@
     "install": "make",
     "prepublish": "make"
   },
-  "main": "./lib/amdee",
+  "main": "./lib/main",
   "dependencies": {
     "optimist": "=0.3.1",
     "coffee-script": "=1.4.0",
