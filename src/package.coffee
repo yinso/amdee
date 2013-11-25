@@ -395,7 +395,7 @@ define([#{externals}], function(#{baseDepends}) {
         cb null, @targetPath
   haUnprocessedPackages: () ->
     for spec in @externals
-      if not @loadedModules.hasOwnProperty(spec)
+      if not _.contains(@skipped, spec) and not @loadedModules.hasOwnProperty(spec)
         return spec
     return null
   loadExternalPackages: (iterHelper, cb) ->
@@ -413,7 +413,7 @@ define([#{externals}], function(#{baseDepends}) {
                   helper @haUnprocessedPackages()
         else # the spec is skipped.
           console.log "External Module #{spec} skipped as defined by package.json."
-          helper @hasUnprocessedSpec()
+          helper @haUnprocessedPackages()
       else # no more spec.
         console.log "No more unprocessed external modules."
         cb null, @

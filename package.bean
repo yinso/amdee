@@ -3,7 +3,7 @@
 name: 'amdee'
 author: 'YC <yinso.chen@gmail.com>'
 description: 'Converting CommonJS modules into AMD format'
-version: '0.5.4'
+version: '0.5.5'
 perferGlobal: true
 bin:
   amdee: "./bin/amdee"
